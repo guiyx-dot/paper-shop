@@ -439,7 +439,9 @@ button {
   font-size: 11px;
   color: #b4aea6;
   font-weight: 500;
-  white-space: nowrap;
+  text-align: right;
+  line-height: 1.4;
+  white-space: normal;
 }
 
 .cat-row {
@@ -927,6 +929,14 @@ button {
   font-weight: 800;
 }
 
+.account-grid.is-three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.account-grid.is-three strong {
+  font-size: 20px;
+}
+
 .corp-card {
   padding: 12px 14px;
   display: flex;
@@ -1029,6 +1039,7 @@ button {
 
 .pay-switch {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   margin: 12px 0 4px;
@@ -1047,6 +1058,33 @@ button {
   border-color: var(--orange);
   color: var(--orange);
   background: var(--orange-soft);
+}
+
+.coupon-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 0 0;
+}
+
+.coupon-pick button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #eadfd0;
+  color: #8a7a68;
+  font-size: 11px;
+}
+
+.coupon-pick button.on {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: var(--orange-soft);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
 }
 
 .voucher-line {

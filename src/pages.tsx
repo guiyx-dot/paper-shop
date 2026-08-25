@@ -3,7 +3,18 @@ import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
 import { useStore } from './store'
 import { useState, type CSSProperties } from 'react'
-import type { Product } from './types'
+import type { PayMethod, Product } from './types'
+
+function money(n: number) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(2)
+}
+
+function zonePayHint(generalPoints: number, goldBalance: number, couponTotal: number) {
+  const parts = [`${generalPoints} 积分`]
+  if (goldBalance > 0) parts.push(`通用金 ${money(goldBalance)}`)
+  if (couponTotal > 0) parts.push(`券 ${money(couponTotal)}`)
+  return `积分 / 金 / 券三选一 · ${parts.join(' · ')}`
+}
 
 export function TabBar({ current }: { current: 'mall' | 'mine' }) {
   const { go } = useStore()
@@ -99,7 +110,7 @@ export function ClaimPage() {
 }
 
 export function MallPage() {
-  const { points, go, pendingAmount, pendingCount, generalPoints, voucherValue, voucherLabel } = useStore()
+  const { points, go, pendingAmount, pendingCount, generalPoints, goldBalance, couponTotal } = useStore()
   const [category, setCategory] = useState<'all' | 'dining' | 'life' | 'travel'>('all')
 
   const benefitList = PRODUCTS.filter((item) => item.zone === 'benefit')
@@ -127,7 +138,7 @@ export function MallPage() {
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>权益专区</h2>
-          <p>按发放额度兑换</p>
+          <p>先兑成通用金或抵扣券</p>
         </div>
         <div className="product-grid">
           {benefitList.map((item) => (
@@ -141,7 +152,7 @@ export function MallPage() {
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>积分专区</h2>
-          <p>本专区可用 {generalPoints} 积分{voucherValue > 0 ? ` · ${voucherLabel} ${voucherValue}` : ''}</p>
+          <p>{zonePayHint(generalPoints, goldBalance, couponTotal)}</p>
         </div>
         <div className="cat-row">
           {[
@@ -195,20 +206,34 @@ function ProductCardBody({ product }: { product: Product }) {
 }
 
 export function DetailPage({ productId }: { productId: string }) {
-  const { go, points, generalPoints, productById, unavailable, redeem, remainingQuota, voucherValue, voucherLabel, userFeeRate } =
-    useStore()
+  const {
+    go,
+    points,
+    generalPoints,
+    productById,
+    unavailable,
+    redeem,
+    remainingQuota,
+    goldBalance,
+    coupons,
+    couponTotal,
+    userFeeRate,
+    quotePay,
+  } = useStore()
   const [confirm, setConfirm] = useState(false)
-  const [payWith, setPayWith] = useState<'points' | 'voucher'>('points')
+  const [payWith, setPayWith] = useState<PayMethod>('points')
+  const [couponId, setCouponId] = useState<string | undefined>(undefined)
   const product = productById(productId)
   if (!product) return null
   const reason = unavailable(product)
   const quotaLeft = remainingQuota(product.id)
-  const pointsPay = product.cost
-  const canVoucher = product.zone === 'points' && !product.ended && voucherValue >= product.cost
-  const activePay: 'points' | 'voucher' = canVoucher && reason ? 'voucher' : payWith
-  const usable = product.zone === 'points' ? generalPoints : points
-  const after = usable - (product.zone === 'points' ? pointsPay : product.cost)
   const received = product.zone === 'benefit' ? Math.round(product.cost * (1 - userFeeRate) * 100) / 100 : product.cost
+  const pointsQuote = quotePay(product, 'points')
+  const goldQuote = quotePay(product, 'gold')
+  const couponQuote = quotePay(product, 'coupon', couponId)
+  const quote = payWith === 'gold' ? goldQuote : payWith === 'coupon' ? couponQuote : pointsQuote
+  const canAny = product.zone === 'benefit' ? !reason : pointsQuote.ok || goldQuote.ok || couponQuote.ok
+  const afterPoints = (product.zone === 'points' ? generalPoints : points) - quote.pointsPaid
 
   return (
     <div className="page detail-page">
@@ -222,21 +247,46 @@ export function DetailPage({ productId }: { productId: string }) {
       <div className="info-card">
         <Row label="所需积分" value={`${product.cost} 积分`} accent />
         {product.zone === 'points' ? (
-          <Row label="本专区可用" value={`${generalPoints} 积分`} />
+          <Row label="本专区可用积分" value={`${generalPoints} 积分`} />
         ) : (
           <Row label="当前会员积分" value={`${points} 积分`} />
         )}
+        {product.zone === 'points' ? <Row label="通用金余额" value={`${money(goldBalance)}`} /> : null}
+        {product.zone === 'points' ? (
+          <Row
+            label="抵扣券"
+            value={couponTotal > 0 ? coupons.map((item) => `${item.name} ${money(item.value)}`).join(' / ') : '0'}
+          />
+        ) : null}
         {product.zone === 'benefit' && quotaLeft > 0 ? (
           <Row label="可兑数量" value={`剩余 ${quotaLeft} 份`} />
         ) : null}
         {product.zone === 'benefit' && userFeeRate > 0 ? (
           <Row label="用户承担后到账" value={`${received} 元${product.name}`} />
         ) : null}
-        {product.zone === 'points' && canVoucher ? (
-          <Row label="也可用金/券兑" value={`1:1 · ${voucherLabel} ${voucherValue}`} />
+        {product.zone === 'benefit' ? (
+          <Row label="兑后用途" value={product.id === 'gold' ? '入通用金余额，可兑积分专区' : '入抵扣券，可兑积分专区'} />
         ) : null}
-        {voucherValue > 0 ? <Row label={voucherLabel} value={`${voucherValue}`} /> : null}
-        {!reason && payWith === 'points' ? <Row label="兑后剩余积分" value={`${after} 积分`} /> : null}
+        {product.zone === 'points' ? (
+          <Row
+            label="本次支付"
+            value={
+              payWith === 'gold'
+                ? `通用金 ${money(product.cost)}（余额 ${money(goldBalance)}）`
+                : payWith === 'coupon'
+                  ? `${couponQuote.label} ${money(product.cost)}（持有 ${money(coupons.find((item) => item.productId === (couponId ?? couponQuote.couponProductId))?.value ?? couponTotal)}）`
+                  : `${product.cost} 积分`
+            }
+          />
+        ) : canAny && quote.ok ? (
+          <Row label="本次支付" value={`${product.cost} 积分`} />
+        ) : null}
+        {product.zone !== 'points' && canAny && quote.ok && quote.pointsPaid > 0 ? (
+          <Row label="兑后剩余积分" value={`${afterPoints} 积分`} />
+        ) : null}
+        {product.zone === 'points' && payWith === 'points' && pointsQuote.ok ? (
+          <Row label="兑后剩余积分" value={`${generalPoints - product.cost} 积分`} />
+        ) : null}
         <Row label="有效期" value={`兑换后 ${product.validityDays} 天`} />
         <Row label="库存" value={product.stockLabel} />
       </div>
@@ -247,17 +297,26 @@ export function DetailPage({ productId }: { productId: string }) {
           {reason
             ? reason.hint
             : product.zone === 'benefit'
-              ? `${product.usage} 兑成金/券后，可再兑换积分专区商品。`
-              : product.usage}
+              ? `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
+              : '支付方式三选一：积分、通用金或抵扣券，不可混合。余额不够请先兑权益专区，或改用其他方式。'}
         </p>
       </div>
       <div className="bottom-cta">
-        {reason && !canVoucher ? (
+        {!canAny ? (
           <button className="btn-primary is-disabled" disabled>
-            {reason.label}
+            {reason?.label ?? '兑换结束'}
           </button>
         ) : (
-          <button className="btn-primary" onClick={() => setConfirm(true)}>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              if (product.zone === 'points' && !pointsQuote.ok) {
+                if (goldQuote.ok) setPayWith('gold')
+                else if (couponQuote.ok) setPayWith('coupon')
+              }
+              setConfirm(true)
+            }}
+          >
             立即兑换
           </button>
         )}
@@ -267,44 +326,69 @@ export function DetailPage({ productId }: { productId: string }) {
           <div className="modal" onClick={(event) => event.stopPropagation()}>
             <h3>确认兑换</h3>
             <p className="modal-name">{product.name}</p>
-            {canVoucher ? (
+            {product.zone === 'points' ? (
               <div className="pay-switch">
-                <button className={activePay === 'voucher' ? 'on' : ''} onClick={() => setPayWith('voucher')} type="button">
-                  用{voucherLabel}兑
+                <button className={payWith === 'points' ? 'on' : ''} onClick={() => setPayWith('points')} type="button">
+                  积分
                 </button>
-                <button
-                  className={activePay === 'points' ? 'on' : ''}
-                  onClick={() => setPayWith('points')}
-                  type="button"
-                  disabled={Boolean(reason)}
-                >
-                  用积分兑
+                <button className={payWith === 'gold' ? 'on' : ''} onClick={() => setPayWith('gold')} type="button">
+                  通用金
+                </button>
+                <button className={payWith === 'coupon' ? 'on' : ''} onClick={() => setPayWith('coupon')} type="button">
+                  券
                 </button>
               </div>
             ) : null}
+            {product.zone === 'points' && payWith === 'coupon' && coupons.length > 0 ? (
+              <div className="coupon-pick">
+                {coupons.map((item) => (
+                  <button
+                    key={item.productId}
+                    type="button"
+                    className={(couponId ?? couponQuote.couponProductId) === item.productId ? 'on' : ''}
+                    onClick={() => setCouponId(item.productId)}
+                  >
+                    {item.name} {money(item.value)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="modal-amount">
-              <em>{activePay === 'voucher' ? product.cost : pointsPay}</em> {activePay === 'voucher' ? voucherLabel : '积分'}
+              <em>{money(product.cost)}</em>{' '}
+              {payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'}
             </div>
             <p className="modal-sub">
-              {activePay === 'voucher'
-                ? `${voucherLabel}余额：${voucherValue}`
-                : product.zone === 'points'
-                  ? `本专区可用：${generalPoints}`
-                  : `当前会员积分：${points}`}
+              {product.zone !== 'points'
+                ? `当前会员积分：${points}`
+                : payWith === 'gold'
+                  ? goldQuote.ok
+                    ? `通用金余额 ${money(goldBalance)}，本单全额扣通用金`
+                    : `通用金余额 ${money(goldBalance)}，本单需 ${money(product.cost)}，请先兑够或改用其他方式`
+                  : payWith === 'coupon'
+                    ? couponQuote.ok
+                      ? `${couponQuote.label} ${money(coupons.find((item) => item.productId === couponQuote.couponProductId)?.value ?? 0)}，本单全额扣券`
+                      : coupons.length === 0
+                        ? '暂无抵扣券，请先兑权益专区或改用其他方式'
+                        : `${couponQuote.label}余额不足，本单需 ${money(product.cost)}`
+                    : pointsQuote.ok
+                      ? `本专区可用：${generalPoints} 积分，本单全额扣积分`
+                      : `本专区可用 ${generalPoints} 积分，不足 ${product.cost}`}
             </p>
             {product.zone === 'benefit' ? (
               <p className="modal-tip">
-                到账约 {received} 元{product.name}，之后可二次兑换积分专区
+                到账约 {received} 元{product.name}
+                {product.id === 'gold' ? '（计入通用金余额）' : '（计入抵扣券）'}，之后可在积分专区支付
               </p>
             ) : null}
             <button
               className="btn-primary"
+              disabled={product.zone === 'points' ? !quote.ok : Boolean(reason)}
               onClick={() => {
                 setConfirm(false)
-                redeem(product.id, activePay)
+                redeem(product.id, product.zone === 'points' ? payWith : 'points', couponId)
               }}
             >
-              确认兑换
+              {product.zone === 'points' && !quote.ok ? '余额不足' : '确认兑换'}
             </button>
             <button className="btn-text" onClick={() => setConfirm(false)}>
               取消
@@ -357,12 +441,16 @@ export function SuccessPage({ orderId }: { orderId: string }) {
         <div className="check">✓</div>
         <h2>兑换成功</h2>
         <p>
-          {order.payWith === 'voucher'
-            ? `已用金/券抵扣 ${order.cost}`
-            : `${order.cost} 积分已扣除`}
+          {order.payWith === 'gold'
+            ? `已用通用金 ${money(order.goldPaid ?? 0)}${(order.pointsPaid ?? 0) > 0 ? `，积分补 ${money(order.pointsPaid ?? 0)}` : ''}`
+            : order.payWith === 'coupon'
+              ? `已用${order.payLabel ?? '抵扣券'}抵扣 ${money(order.couponPaid ?? 0)}${(order.pointsPaid ?? 0) > 0 ? `，积分补 ${money(order.pointsPaid ?? 0)}` : ''}`
+              : `${order.cost} 积分已扣除`}
         </p>
         {order.received ? (
-          <p>到账 {order.received} 元，可再兑换积分专区商品</p>
+          <p>
+            到账 {order.received} 元{order.productId === 'gold' ? '通用金' : '抵扣券'}，可在积分专区支付
+          </p>
         ) : null}
       </div>
       <div className="ticket">
@@ -375,7 +463,23 @@ export function SuccessPage({ orderId }: { orderId: string }) {
       <div className="info-card">
         <Row label="订单编号" value={order.id} />
         <Row label="兑换时间" value={order.time} />
-        <Row label="消耗积分" value={`-${order.cost} 积分`} accent />
+        <Row
+          label="支付方式"
+          value={
+            order.payWith === 'gold' ? '通用金余额' : order.payWith === 'coupon' ? `${order.payLabel ?? '抵扣券'}` : '积分'
+          }
+        />
+        {(order.pointsPaid ?? order.cost) > 0 && order.payWith !== 'gold' && order.payWith !== 'coupon' ? (
+          <Row label="消耗积分" value={`-${order.cost} 积分`} accent />
+        ) : null}
+        {(order.goldPaid ?? 0) > 0 ? <Row label="消耗通用金" value={`-${money(order.goldPaid ?? 0)}`} accent /> : null}
+        {(order.couponPaid ?? 0) > 0 ? (
+          <Row label={`消耗${order.payLabel ?? '抵扣券'}`} value={`-${money(order.couponPaid ?? 0)}`} accent />
+        ) : null}
+        {(order.pointsPaid ?? 0) > 0 && (order.payWith === 'gold' || order.payWith === 'coupon') ? (
+          <Row label="积分补差" value={`-${money(order.pointsPaid ?? 0)} 积分`} accent />
+        ) : null}
+        {order.received ? <Row label="到账" value={`${order.received} 元`} success /> : null}
         <Row label="状态" value="已完成" success />
       </div>
       <div className="bottom-cta">
@@ -388,7 +492,7 @@ export function SuccessPage({ orderId }: { orderId: string }) {
 }
 
 export function MinePage() {
-  const { points, go, ledger, pendingAmount, pendingCount, reset, voucherValue, voucherLabel } = useStore()
+  const { points, go, ledger, pendingAmount, pendingCount, reset, goldBalance, coupons, couponTotal } = useStore()
 
   return (
     <div className="page mine-page">
@@ -403,20 +507,27 @@ export function MinePage() {
       </div>
       <div className="account-card">
         <div className="account-top">我的账户</div>
-        <div className="account-grid">
+        <div className="account-grid is-three">
           <div>
-            <span>可用积分额度</span>
+            <span>可用积分</span>
             <strong>{points}</strong>
           </div>
           <div>
-            <span>冻结积分额度</span>
-            <strong>0</strong>
+            <span>通用金余额</span>
+            <strong>{money(goldBalance)}</strong>
+          </div>
+          <div>
+            <span>抵扣券</span>
+            <strong>{money(couponTotal)}</strong>
           </div>
         </div>
-        {voucherValue > 0 ? (
+        {coupons.length > 0 ? (
           <div className="voucher-line">
-            {voucherLabel}余额 <b>{voucherValue}</b> · 可二次兑换积分专区
+            {coupons.map((item) => `${item.name} ${money(item.value)}`).join(' · ')}
+            ，可在积分专区抵扣
           </div>
+        ) : goldBalance > 0 ? (
+          <div className="voucher-line">通用金可在积分专区作为余额支付</div>
         ) : null}
       </div>
       <div className="corp-card">
@@ -472,7 +583,14 @@ export function RecordsPage() {
           <button key={item.id} className="ledger-row as-btn" onClick={() => go({ name: 'success', orderId: item.id })}>
             <div>
               <div className="ledger-title">{item.productName}</div>
-              <div className="ledger-time">{item.time} · {item.id}</div>
+              <div className="ledger-time">
+                {item.time} · {item.id}
+                {item.payWith === 'gold'
+                  ? ' · 通用金'
+                  : item.payWith === 'coupon'
+                    ? ` · ${item.payLabel ?? '券'}`
+                    : ' · 积分'}
+              </div>
             </div>
             <strong className="accent">-{item.cost}</strong>
           </button>

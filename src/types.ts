@@ -45,6 +45,24 @@ export type LedgerEntry = {
   time: string
 }
 
+export type PayMethod = 'points' | 'gold' | 'coupon'
+
+export type CouponHold = {
+  productId: string
+  name: string
+  value: number
+}
+
+export type PayQuote = {
+  method: PayMethod
+  goldPaid: number
+  couponPaid: number
+  pointsPaid: number
+  ok: boolean
+  label: string
+  couponProductId?: string
+}
+
 export type Order = {
   id: string
   productId: string
@@ -53,6 +71,10 @@ export type Order = {
   time: string
   expireDate: string
   status: 'completed'
-  payWith?: 'points' | 'voucher'
+  payWith?: PayMethod
+  payLabel?: string
+  goldPaid?: number
+  couponPaid?: number
+  pointsPaid?: number
   received?: number
 }

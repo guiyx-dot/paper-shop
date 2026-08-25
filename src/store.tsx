@@ -1,8 +1,10 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
-import type { Grant, LedgerEntry, Order, Product, Screen } from './types'
+import type { CouponHold, Grant, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
-export const CONSUMER_KEY = 'points-mall-demo-v2'
+export const CONSUMER_KEY = 'points-mall-demo-v3'
+export const GOLD_PRODUCT_ID = 'gold'
+export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
 
 type Persisted = {
   grants: Grant[]
@@ -12,8 +14,8 @@ type Persisted = {
   ledger: LedgerEntry[]
   hasEverClaimed: boolean
   followUpIssued: boolean
-  voucherValue: number
-  voucherLabel: string
+  goldBalance: number
+  coupons: CouponHold[]
   userFeeRate: number
 }
 
@@ -64,17 +66,149 @@ function emptyState(): Persisted {
     ledger: [],
     hasEverClaimed: false,
     followUpIssued: false,
-    voucherValue: 0,
-    voucherLabel: '金/券',
+    goldBalance: 0,
+    coupons: [],
     userFeeRate: 0,
   }
 }
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100
+}
+
+export function isGoldBenefit(id: string) {
+  return id === GOLD_PRODUCT_ID
+}
+
+export function isCouponBenefit(id: string) {
+  return (COUPON_PRODUCT_IDS as readonly string[]).includes(id)
+}
+
+function sumCoupons(coupons: CouponHold[]) {
+  return round2(coupons.reduce((sum, item) => sum + item.value, 0))
+}
+
+function pickCoupon(coupons: CouponHold[], couponProductId?: string, need?: number): CouponHold | undefined {
+  if (couponProductId) return coupons.find((item) => item.productId === couponProductId && item.value > 0)
+  const usable = coupons.filter((item) => item.value > 0)
+  if (usable.length === 0) return undefined
+  if (need != null) {
+    const full = usable.filter((item) => item.value >= need).sort((a, b) => b.value - a.value)
+    if (full[0]) return full[0]
+  }
+  return [...usable].sort((a, b) => b.value - a.value)[0]
+}
+
+export function makePayQuote(
+  goldBalance: number,
+  coupons: CouponHold[],
+  generalPoints: number,
+  product: Product,
+  payWith: PayMethod,
+  couponProductId?: string,
+): PayQuote {
+  const cost = product.cost
+  if (product.zone !== 'points') {
+    return {
+      method: 'points',
+      goldPaid: 0,
+      couponPaid: 0,
+      pointsPaid: cost,
+      ok: true,
+      label: '积分',
+    }
+  }
+  if (payWith === 'points') {
+    return {
+      method: 'points',
+      goldPaid: 0,
+      couponPaid: 0,
+      pointsPaid: cost,
+      ok: generalPoints >= cost,
+      label: '积分',
+    }
+  }
+  if (payWith === 'gold') {
+    return {
+      method: 'gold',
+      goldPaid: cost,
+      couponPaid: 0,
+      pointsPaid: 0,
+      ok: goldBalance >= cost,
+      label: '通用金',
+    }
+  }
+  const coupon = pickCoupon(coupons, couponProductId, cost)
+  if (!coupon) {
+    return {
+      method: 'coupon',
+      goldPaid: 0,
+      couponPaid: 0,
+      pointsPaid: 0,
+      ok: false,
+      label: '抵扣券',
+    }
+  }
+  return {
+    method: 'coupon',
+    goldPaid: 0,
+    couponPaid: cost,
+    pointsPaid: 0,
+    ok: coupon.value >= cost,
+    label: coupon.name,
+    couponProductId: coupon.productId,
+  }
+}
+
+function creditWallet(data: Persisted, product: Product, received: number): Pick<Persisted, 'goldBalance' | 'coupons'> {
+  if (isGoldBenefit(product.id)) {
+    return { goldBalance: round2(data.goldBalance + received), coupons: data.coupons }
+  }
+  if (!isCouponBenefit(product.id)) {
+    return { goldBalance: data.goldBalance, coupons: data.coupons }
+  }
+  const coupons = data.coupons.map((item) => ({ ...item }))
+  const found = coupons.find((item) => item.productId === product.id)
+  if (found) found.value = round2(found.value + received)
+  else coupons.push({ productId: product.id, name: product.name, value: received })
+  return { goldBalance: data.goldBalance, coupons }
+}
+
+function debitCoupon(coupons: CouponHold[], productId: string, amount: number) {
+  return coupons
+    .map((item) =>
+      item.productId === productId ? { ...item, value: round2(item.value - amount) } : item,
+    )
+    .filter((item) => item.value > 0)
+}
+
 function loadState(): Persisted {
   try {
-    const raw = sessionStorage.getItem(CONSUMER_KEY)
+    const raw = sessionStorage.getItem(CONSUMER_KEY) ?? sessionStorage.getItem('points-mall-demo-v2')
     if (!raw) return emptyState()
-    return { ...emptyState(), ...JSON.parse(raw) } as Persisted
+    const parsed = JSON.parse(raw) as Partial<Persisted> & { voucherValue?: number; voucherLabel?: string }
+    const next: Persisted = {
+      ...emptyState(),
+      ...parsed,
+      goldBalance: parsed.goldBalance ?? 0,
+      coupons: Array.isArray(parsed.coupons) ? parsed.coupons : [],
+    }
+    const legacy = parsed.voucherValue ?? 0
+    if (legacy > 0 && next.goldBalance === 0 && next.coupons.length === 0) {
+      const label = parsed.voucherLabel ?? ''
+      if (label.includes('金') && !label.includes('券')) next.goldBalance = legacy
+      else {
+        const product = PRODUCTS.find((item) => item.name === label)
+        next.coupons = [
+          {
+            productId: product && isCouponBenefit(product.id) ? product.id : 'alipay',
+            name: label || '抵扣券',
+            value: legacy,
+          },
+        ]
+      }
+    }
+    return next
   } catch {
     return emptyState()
   }
@@ -89,11 +223,13 @@ type Store = Persisted & {
   generalPoints: number
   go: (screen: Screen) => void
   claimPending: () => void
-  redeem: (productId: string, payWith?: 'points' | 'voucher') => Order | null
+  redeem: (productId: string, payWith?: PayMethod, couponProductId?: string) => Order | null
   reset: () => void
   productById: (id: string) => Product | undefined
   remainingQuota: (productId: string) => number
   unavailable: (product: Product) => Unavailable
+  quotePay: (product: Product, payWith: PayMethod, couponProductId?: string) => PayQuote
+  couponTotal: number
 }
 
 const StoreContext = createContext<Store | null>(null)
@@ -171,55 +307,97 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { label: '兑换结束', hint: '该商品发放额度已兑完' }
     }
     if (product.zone === 'points') {
-      if (data.voucherValue < product.cost && generalPoints < product.cost) return ended
+      const canPoints = makePayQuote(data.goldBalance, data.coupons, generalPoints, product, 'points').ok
+      const canGold = makePayQuote(data.goldBalance, data.coupons, generalPoints, product, 'gold').ok
+      const canCoupon = makePayQuote(data.goldBalance, data.coupons, generalPoints, product, 'coupon').ok
+      if (!canPoints && !canGold && !canCoupon) return ended
       return null
     }
     if (data.points < product.cost) return ended
     return null
   }
 
-  const redeem = (productId: string, payWith: 'points' | 'voucher' = 'points') => {
+  const redeem = (productId: string, payWith: PayMethod = 'points', couponProductId?: string) => {
     const product = PRODUCTS.find((item) => item.id === productId)
     if (!product) return null
     if (product.ended || product.benefitStatus === 'ended' || product.benefitStatus === 'locked') return null
-    const useVoucher = product.zone === 'points' && payWith === 'voucher'
-    const pointsPay = product.cost
-    if (useVoucher && (product.zone !== 'points' || data.voucherValue < product.cost)) return null
-    if (!useVoucher && product.zone === 'points' && generalPoints < pointsPay) return null
-    if (!useVoucher && product.zone === 'benefit' && unavailable(product)) return null
 
+    if (product.zone === 'benefit') {
+      if (unavailable(product)) return null
+      const now = new Date()
+      const received = round2(product.cost * (1 - data.userFeeRate))
+      const wallet = creditWallet(data, product, received)
+      const order: Order = {
+        id: `ORD${now.getTime().toString().slice(-10)}`,
+        productId: product.id,
+        productName: product.name,
+        cost: product.cost,
+        time: formatTime(now),
+        expireDate: addDays(product.validityDays, now),
+        status: 'completed',
+        payWith: 'points',
+        payLabel: '积分',
+        pointsPaid: product.cost,
+        received,
+      }
+      persist({
+        ...data,
+        ...wallet,
+        points: data.points - product.cost,
+        quotas: { ...data.quotas, [product.id]: (data.quotas[product.id] ?? 1) - 1 },
+        orders: [order, ...data.orders],
+        ledger: [
+          {
+            id: `L${now.getTime()}`,
+            type: 'redeem',
+            title: `兑换${product.name}`,
+            amount: -product.cost,
+            time: order.time,
+          },
+          ...data.ledger,
+        ],
+      })
+      setScreen({ name: 'success', orderId: order.id })
+      return order
+    }
+
+    const quote = makePayQuote(data.goldBalance, data.coupons, generalPoints, product, payWith, couponProductId)
+    if (!quote.ok) return null
     const now = new Date()
-    const received =
-      product.zone === 'benefit' ? Math.round(product.cost * (1 - data.userFeeRate) * 100) / 100 : undefined
     const order: Order = {
       id: `ORD${now.getTime().toString().slice(-10)}`,
       productId: product.id,
       productName: product.name,
-      cost: useVoucher ? product.cost : pointsPay,
+      cost: product.cost,
       time: formatTime(now),
       expireDate: addDays(product.validityDays, now),
       status: 'completed',
-      payWith: useVoucher ? 'voucher' : 'points',
-      received,
+      payWith: quote.method,
+      payLabel: quote.label,
+      goldPaid: quote.goldPaid,
+      couponPaid: quote.couponPaid,
+      pointsPaid: quote.pointsPaid,
     }
+    const ledgerTitle =
+      quote.method === 'gold'
+        ? `通用金兑换${product.name}`
+        : quote.method === 'coupon'
+          ? `${quote.label}兑换${product.name}`
+          : `兑换${product.name}`
     persist({
       ...data,
-      points: useVoucher ? data.points : data.points - (product.zone === 'points' ? pointsPay : product.cost),
-      voucherValue: useVoucher
-        ? data.voucherValue - product.cost
-        : product.zone === 'benefit'
-          ? data.voucherValue + (received ?? 0)
-          : data.voucherValue,
-      voucherLabel: product.zone === 'benefit' ? product.name : data.voucherLabel,
-      quotas:
-        product.zone === 'benefit' ? { ...data.quotas, [product.id]: (data.quotas[product.id] ?? 1) - 1 } : data.quotas,
+      points: data.points - quote.pointsPaid,
+      goldBalance: round2(data.goldBalance - quote.goldPaid),
+      coupons: quote.couponProductId
+        ? debitCoupon(data.coupons, quote.couponProductId, quote.couponPaid)
+        : data.coupons,
       orders: [order, ...data.orders],
       ledger: [
         {
           id: `L${now.getTime()}`,
           type: 'redeem',
-          title: useVoucher ? `金/券兑换${product.name}` : `兑换${product.name}`,
-          amount: useVoucher ? -product.cost : -(product.zone === 'points' ? pointsPay : product.cost),
+          title: ledgerTitle,
+          amount: -(quote.pointsPaid || quote.goldPaid || quote.couponPaid),
           time: order.time,
         },
         ...data.ledger,
@@ -248,6 +426,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       productById: (id: string) => PRODUCTS.find((item) => item.id === id),
       remainingQuota: (productId: string) => data.quotas[productId] ?? 0,
       unavailable,
+      quotePay: (product, payWith, couponProductId) =>
+        makePayQuote(data.goldBalance, data.coupons, generalPoints, product, payWith, couponProductId),
+      couponTotal: sumCoupons(data.coupons),
     }),
     [data, screen, pendingAmount, pendingCount, generalPoints],
   )
