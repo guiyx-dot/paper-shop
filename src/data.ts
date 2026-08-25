@@ -7,14 +7,14 @@ export const USER = {
 }
 
 export const INITIAL_GRANTS: Grant[] = [
-  { id: 'g1', title: '会员积分发放', amount: 1800, claimed: false },
-  { id: 'g2', title: '补充积分发放', amount: 500, claimed: false },
+  { id: 'g1', title: '会员积分发放', amount: 5500, claimed: false },
+  { id: 'g2', title: '补充积分发放', amount: 2000, claimed: false },
 ]
 
 export const FOLLOW_UP_GRANT: Grant = {
   id: 'g3',
   title: '新增积分发放',
-  amount: 300,
+  amount: 800,
   claimed: false,
 }
 
@@ -28,9 +28,9 @@ export const PRODUCTS: Product[] = [
     validityDays: 90,
     stockLabel: '充足',
     benefitStatus: 'available',
-    quota: 2,
+    quota: 500,
     description: '兑换后可用于指定消费场景抵扣，具体以发放说明为准。',
-    usage: '本商品按发放额度兑换，兑换份数以账户剩余可兑数量为准。兑换后不支持退回积分。',
+    usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
   {
     id: 'alipay',
@@ -41,9 +41,9 @@ export const PRODUCTS: Product[] = [
     validityDays: 90,
     stockLabel: '充足',
     benefitStatus: 'available',
-    quota: 3,
+    quota: 500,
     description: '兑换后将发放至绑定账户，可在支持的消费场景中抵扣使用。',
-    usage: '本商品按发放额度兑换，兑换份数以账户剩余可兑数量为准。兑换后不支持退回积分。',
+    usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
   {
     id: 'alipay-plus',
@@ -54,9 +54,9 @@ export const PRODUCTS: Product[] = [
     validityDays: 90,
     stockLabel: '充足',
     benefitStatus: 'available',
-    quota: 0,
+    quota: 500,
     description: '兑换后将发放至绑定账户，可在支持的消费场景中抵扣使用。',
-    usage: '本商品按发放额度兑换，兑换份数以账户剩余可兑数量为准。兑换后不支持退回积分。',
+    usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
   {
     id: 'wechat',
@@ -67,23 +67,9 @@ export const PRODUCTS: Product[] = [
     validityDays: 90,
     stockLabel: '充足',
     benefitStatus: 'available',
-    quota: 0,
+    quota: 200,
     description: '兑换后将发放至微信卡包，可在支持的商户中抵扣使用。',
-    usage: '本商品按发放额度兑换，兑换份数以账户剩余可兑数量为准。兑换后不支持退回积分。',
-  },
-  {
-    id: 'jd',
-    name: '京东e卡',
-    subtitle: '虚拟类目商品',
-    zone: 'benefit',
-    cost: 200,
-    validityDays: 90,
-    stockLabel: '充足',
-    benefitStatus: 'ended',
-    quota: 0,
-    ended: true,
-    description: '兑换后将发放京东e卡卡密，可在京东商城购物使用。',
-    usage: '该商品兑换活动已结束。',
+    usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
   {
     id: 'starbucks',
@@ -210,7 +196,6 @@ export const PRODUCT_TONES: Record<string, [string, string]> = {
   alipay: ['#5AB0FF', '#1677FF'],
   'alipay-plus': ['#7EC8FF', '#0A5CFF'],
   wechat: ['#62E08F', '#07C160'],
-  jd: ['#FF7A6C', '#E1251B'],
   starbucks: ['#4FB37A', '#006241'],
   takeout: ['#FFE566', '#FFD100'],
   hotpot: ['#FF8A7A', '#C41A1A'],

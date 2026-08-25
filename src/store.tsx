@@ -2,7 +2,7 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState,
 import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
 import type { CouponHold, Grant, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
-export const CONSUMER_KEY = 'points-mall-demo-v3'
+export const CONSUMER_KEY = 'points-mall-demo-v6'
 export const GOLD_PRODUCT_ID = 'gold'
 export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
 
@@ -271,7 +271,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let userFeeRate = data.userFeeRate
     const hasLegacy = pending.some((grant) => !grant.kind)
     const hasMerchant = pending.some((grant) => grant.kind === 'general' || grant.kind === 'dedicated')
-    if (hasLegacy) {
+    if (hasLegacy && !data.hasEverClaimed) {
       const seed = seedBenefitQuotas()
       for (const id of Object.keys(seed)) nextQuotas[id] = (nextQuotas[id] ?? 0) + seed[id]
     }
@@ -303,8 +303,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const unavailable = (product: Product): Unavailable => {
     const ended = { label: '兑换结束', hint: '该商品兑换活动已结束' }
     if (product.ended || product.benefitStatus === 'ended' || product.benefitStatus === 'locked') return ended
-    if (product.zone === 'benefit' && (data.quotas[product.id] ?? 0) <= 0) {
-      return { label: '兑换结束', hint: '该商品发放额度已兑完' }
+    if (product.zone === 'benefit') {
+      const qty = data.quotas[product.id] ?? 0
+      if (qty <= 0) return { label: '兑换结束', hint: '该商品发放额度已兑完' }
+      const need = qty * product.cost
+      if (data.points < need) {
+        return { label: '积分不足', hint: `一次兑换剩余 ${qty} 份需要 ${need} 积分` }
+      }
+      return null
     }
     if (product.zone === 'points') {
       const canPoints = makePayQuote(data.goldBalance, data.coupons, generalPoints, product, 'points').ok
@@ -313,8 +319,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!canPoints && !canGold && !canCoupon) return ended
       return null
     }
-    if (data.points < product.cost) return ended
-    return null
+    return ended
   }
 
   const redeem = (productId: string, payWith: PayMethod = 'points', couponProductId?: string) => {
@@ -324,34 +329,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     if (product.zone === 'benefit') {
       if (unavailable(product)) return null
+      const qty = data.quotas[product.id] ?? 0
+      const pointsCost = qty * product.cost
       const now = new Date()
-      const received = round2(product.cost * (1 - data.userFeeRate))
+      const received = round2(pointsCost * (1 - data.userFeeRate))
       const wallet = creditWallet(data, product, received)
       const order: Order = {
         id: `ORD${now.getTime().toString().slice(-10)}`,
         productId: product.id,
-        productName: product.name,
-        cost: product.cost,
+        productName: qty > 1 ? `${product.name}×${qty}` : product.name,
+        cost: pointsCost,
         time: formatTime(now),
         expireDate: addDays(product.validityDays, now),
         status: 'completed',
         payWith: 'points',
         payLabel: '积分',
-        pointsPaid: product.cost,
+        pointsPaid: pointsCost,
         received,
       }
       persist({
         ...data,
         ...wallet,
-        points: data.points - product.cost,
-        quotas: { ...data.quotas, [product.id]: (data.quotas[product.id] ?? 1) - 1 },
+        points: data.points - pointsCost,
+        quotas: { ...data.quotas, [product.id]: 0 },
         orders: [order, ...data.orders],
         ledger: [
           {
             id: `L${now.getTime()}`,
             type: 'redeem',
-            title: `兑换${product.name}`,
-            amount: -product.cost,
+            title: qty > 1 ? `兑换${product.name}×${qty}` : `兑换${product.name}`,
+            amount: -pointsCost,
             time: order.time,
           },
           ...data.ledger,

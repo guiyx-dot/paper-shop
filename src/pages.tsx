@@ -13,7 +13,22 @@ function zonePayHint(generalPoints: number, goldBalance: number, couponTotal: nu
   const parts = [`${generalPoints} 积分`]
   if (goldBalance > 0) parts.push(`通用金 ${money(goldBalance)}`)
   if (couponTotal > 0) parts.push(`券 ${money(couponTotal)}`)
-  return `积分 / 金 / 券三选一 · ${parts.join(' · ')}`
+  return `任选一种支付 · ${parts.join(' · ')}`
+}
+
+function PayMark({ id }: { id: 'points' | string }) {
+  if (id === 'points') {
+    return (
+      <div className="icon-plate" style={{ background: 'linear-gradient(145deg, #FFB347, #FF8A00)' }}>
+        <span className="icon-fallback">积</span>
+      </div>
+    )
+  }
+  return <ProductIcon id={id} />
+}
+
+function PayRadio({ on }: { on: boolean }) {
+  return <span className={on ? 'pay-radio on' : 'pay-radio'} />
 }
 
 export function TabBar({ current }: { current: 'mall' | 'mine' }) {
@@ -138,7 +153,6 @@ export function MallPage() {
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>权益专区</h2>
-          <p>先兑成通用金或抵扣券</p>
         </div>
         <div className="product-grid">
           {benefitList.map((item) => (
@@ -196,8 +210,8 @@ function ProductCardBody({ product }: { product: Product }) {
       <div className="card-meta">
         <div className="card-name">{product.name}</div>
         <div className="card-price">
-          <em>{product.cost}</em> 积分
-          {left > 0 && !reason ? <span className="card-quota">剩 {left} 份</span> : null}
+          <em>{product.zone === 'benefit' && left > 0 ? left * product.cost : product.cost}</em> 积分
+          {left > 0 && !reason ? <span className="card-quota">兑完 {left} 份</span> : null}
         </div>
         <ReasonTag product={product} />
       </div>
@@ -227,13 +241,17 @@ export function DetailPage({ productId }: { productId: string }) {
   if (!product) return null
   const reason = unavailable(product)
   const quotaLeft = remainingQuota(product.id)
-  const received = product.zone === 'benefit' ? Math.round(product.cost * (1 - userFeeRate) * 100) / 100 : product.cost
+  const batchCost = product.zone === 'benefit' ? quotaLeft * product.cost : product.cost
+  const received =
+    product.zone === 'benefit' ? Math.round(batchCost * (1 - userFeeRate) * 100) / 100 : product.cost
   const pointsQuote = quotePay(product, 'points')
   const goldQuote = quotePay(product, 'gold')
   const couponQuote = quotePay(product, 'coupon', couponId)
   const quote = payWith === 'gold' ? goldQuote : payWith === 'coupon' ? couponQuote : pointsQuote
   const canAny = product.zone === 'benefit' ? !reason : pointsQuote.ok || goldQuote.ok || couponQuote.ok
-  const afterPoints = (product.zone === 'points' ? generalPoints : points) - quote.pointsPaid
+  const afterPoints = (product.zone === 'points' ? generalPoints : points) - (product.zone === 'benefit' ? batchCost : quote.pointsPaid)
+  const selectedCouponId = couponId ?? couponQuote.couponProductId
+  const payUnit = payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'
 
   return (
     <div className="page detail-page">
@@ -245,7 +263,7 @@ export function DetailPage({ productId }: { productId: string }) {
         <p>{product.subtitle}</p>
       </div>
       <div className="info-card">
-        <Row label="所需积分" value={`${product.cost} 积分`} accent />
+        <Row label="所需积分" value={`${batchCost} 积分`} accent />
         {product.zone === 'points' ? (
           <Row label="本专区可用积分" value={`${generalPoints} 积分`} />
         ) : (
@@ -278,10 +296,10 @@ export function DetailPage({ productId }: { productId: string }) {
                   : `${product.cost} 积分`
             }
           />
-        ) : canAny && quote.ok ? (
-          <Row label="本次支付" value={`${product.cost} 积分`} />
+        ) : canAny ? (
+          <Row label="本次支付" value={`${batchCost} 积分`} />
         ) : null}
-        {product.zone !== 'points' && canAny && quote.ok && quote.pointsPaid > 0 ? (
+        {product.zone !== 'points' && canAny ? (
           <Row label="兑后剩余积分" value={`${afterPoints} 积分`} />
         ) : null}
         {product.zone === 'points' && payWith === 'points' && pointsQuote.ok ? (
@@ -298,7 +316,7 @@ export function DetailPage({ productId }: { productId: string }) {
             ? reason.hint
             : product.zone === 'benefit'
               ? `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
-              : '支付方式三选一：积分、通用金或抵扣券，不可混合。余额不够请先兑权益专区，或改用其他方式。'}
+              : '支付时竖向选择积分、通用金或抵扣券，一次只用一种。余额不够请先兑权益专区，或改用其他方式。'}
         </p>
       </div>
       <div className="bottom-cta">
@@ -317,63 +335,92 @@ export function DetailPage({ productId }: { productId: string }) {
               setConfirm(true)
             }}
           >
-            立即兑换
+            {product.zone === 'benefit' && quotaLeft > 1 ? `兑换全部 ${quotaLeft} 份` : '立即兑换'}
           </button>
         )}
       </div>
       {confirm ? (
         <div className="modal-mask" onClick={() => setConfirm(false)}>
-          <div className="modal" onClick={(event) => event.stopPropagation()}>
+          <div className={`modal${product.zone === 'points' ? ' modal-pay' : ''}`} onClick={(event) => event.stopPropagation()}>
             <h3>确认兑换</h3>
             <p className="modal-name">{product.name}</p>
-            {product.zone === 'points' ? (
-              <div className="pay-switch">
-                <button className={payWith === 'points' ? 'on' : ''} onClick={() => setPayWith('points')} type="button">
-                  积分
-                </button>
-                <button className={payWith === 'gold' ? 'on' : ''} onClick={() => setPayWith('gold')} type="button">
-                  通用金
-                </button>
-                <button className={payWith === 'coupon' ? 'on' : ''} onClick={() => setPayWith('coupon')} type="button">
-                  券
-                </button>
-              </div>
-            ) : null}
-            {product.zone === 'points' && payWith === 'coupon' && coupons.length > 0 ? (
-              <div className="coupon-pick">
-                {coupons.map((item) => (
-                  <button
-                    key={item.productId}
-                    type="button"
-                    className={(couponId ?? couponQuote.couponProductId) === item.productId ? 'on' : ''}
-                    onClick={() => setCouponId(item.productId)}
-                  >
-                    {item.name} {money(item.value)}
-                  </button>
-                ))}
-              </div>
-            ) : null}
             <div className="modal-amount">
-              <em>{money(product.cost)}</em>{' '}
-              {payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'}
+              <span className="modal-pay-label">需支付</span>
+              <em>{money(batchCost)}</em> {product.zone === 'points' ? payUnit : '积分'}
             </div>
-            <p className="modal-sub">
-              {product.zone !== 'points'
-                ? `当前会员积分：${points}`
-                : payWith === 'gold'
-                  ? goldQuote.ok
-                    ? `通用金余额 ${money(goldBalance)}，本单全额扣通用金`
-                    : `通用金余额 ${money(goldBalance)}，本单需 ${money(product.cost)}，请先兑够或改用其他方式`
-                  : payWith === 'coupon'
-                    ? couponQuote.ok
-                      ? `${couponQuote.label} ${money(coupons.find((item) => item.productId === couponQuote.couponProductId)?.value ?? 0)}，本单全额扣券`
-                      : coupons.length === 0
-                        ? '暂无抵扣券，请先兑权益专区或改用其他方式'
-                        : `${couponQuote.label}余额不足，本单需 ${money(product.cost)}`
-                    : pointsQuote.ok
-                      ? `本专区可用：${generalPoints} 积分，本单全额扣积分`
-                      : `本专区可用 ${generalPoints} 积分，不足 ${product.cost}`}
-            </p>
+            {product.zone === 'points' ? (
+              <div className="pay-list">
+                <button
+                  type="button"
+                  className={`pay-row${payWith === 'points' ? ' on' : ''}${pointsQuote.ok ? '' : ' is-short'}`}
+                  onClick={() => setPayWith('points')}
+                >
+                  <PayMark id="points" />
+                  <span className="pay-row-body">
+                    <span className="pay-row-title">积分</span>
+                    <span className="pay-row-sub">
+                      {pointsQuote.ok ? `可用 ${generalPoints} 积分` : `可用 ${generalPoints} 积分，不足 ${product.cost}`}
+                    </span>
+                  </span>
+                  <PayRadio on={payWith === 'points'} />
+                </button>
+                <button
+                  type="button"
+                  className={`pay-row${payWith === 'gold' ? ' on' : ''}${goldQuote.ok ? '' : ' is-short'}`}
+                  onClick={() => setPayWith('gold')}
+                >
+                  <PayMark id="gold" />
+                  <span className="pay-row-body">
+                    <span className="pay-row-title">通用金</span>
+                    <span className="pay-row-sub">
+                      {goldQuote.ok ? `余额 ${money(goldBalance)}` : `余额 ${money(goldBalance)}，不足 ${money(product.cost)}`}
+                    </span>
+                  </span>
+                  <PayRadio on={payWith === 'gold'} />
+                </button>
+                {coupons.length > 0 ? (
+                  coupons.map((item) => {
+                    const selected = payWith === 'coupon' && selectedCouponId === item.productId
+                    const enough = item.value >= product.cost
+                    return (
+                      <button
+                        key={item.productId}
+                        type="button"
+                        className={`pay-row${selected ? ' on' : ''}${enough ? '' : ' is-short'}`}
+                        onClick={() => {
+                          setPayWith('coupon')
+                          setCouponId(item.productId)
+                        }}
+                      >
+                        <PayMark id={item.productId} />
+                        <span className="pay-row-body">
+                          <span className="pay-row-title">{item.name}</span>
+                          <span className="pay-row-sub">
+                            {enough ? `余额 ${money(item.value)}` : `余额 ${money(item.value)}，不足 ${money(product.cost)}`}
+                          </span>
+                        </span>
+                        <PayRadio on={selected} />
+                      </button>
+                    )
+                  })
+                ) : (
+                  <button
+                    type="button"
+                    className={`pay-row${payWith === 'coupon' ? ' on' : ''} is-short`}
+                    onClick={() => setPayWith('coupon')}
+                  >
+                    <PayMark id="alipay" />
+                    <span className="pay-row-body">
+                      <span className="pay-row-title">抵扣券</span>
+                      <span className="pay-row-sub">暂无可用券，请先兑权益专区</span>
+                    </span>
+                    <PayRadio on={payWith === 'coupon'} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="modal-sub">当前会员积分：{points}，一次兑完剩余 {quotaLeft} 份</p>
+            )}
             {product.zone === 'benefit' ? (
               <p className="modal-tip">
                 到账约 {received} 元{product.name}
