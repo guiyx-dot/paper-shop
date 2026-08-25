@@ -1,0 +1,58 @@
+export type Zone = 'benefit' | 'points'
+export type Category = 'dining' | 'life' | 'travel'
+export type BenefitStatus = 'available' | 'locked' | 'ended'
+export type Tab = 'mall' | 'mine'
+
+export type Screen =
+  | { name: 'claim' }
+  | { name: 'mall' }
+  | { name: 'detail'; productId: string }
+  | { name: 'success'; orderId: string }
+  | { name: 'mine' }
+  | { name: 'records' }
+
+export type Product = {
+  id: string
+  name: string
+  subtitle: string
+  zone: Zone
+  category?: Category
+  cost: number
+  validityDays: number
+  stockLabel: string
+  description: string
+  usage: string
+  benefitStatus?: BenefitStatus
+  quota?: number
+  ended?: boolean
+}
+
+export type Grant = {
+  id: string
+  title: string
+  amount: number
+  claimed: boolean
+  kind?: 'general' | 'dedicated'
+  productId?: string
+  userFeeRate?: number
+}
+
+export type LedgerEntry = {
+  id: string
+  type: 'claim' | 'redeem'
+  title: string
+  amount: number
+  time: string
+}
+
+export type Order = {
+  id: string
+  productId: string
+  productName: string
+  cost: number
+  time: string
+  expireDate: string
+  status: 'completed'
+  payWith?: 'points' | 'voucher'
+  received?: number
+}
