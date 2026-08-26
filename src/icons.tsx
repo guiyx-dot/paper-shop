@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
 
+function logo(file: string) {
+  return `${import.meta.env.BASE_URL}logos/${file}`
+}
+
 const wrap = (bg: string, children: ReactNode) => (
   <div className="icon-plate" style={{ background: bg }}>
     {children}
@@ -16,9 +20,9 @@ function BrandMark({ src, bg, invert = true }: { src: string; bg: string; invert
 export function ProductIcon({ id }: { id: string }) {
   switch (id) {
     case 'alipay':
-      return <BrandMark src="/logos/alipay.svg" bg="#1677FF" />
+      return <BrandMark src={logo('alipay.svg')} bg="#1677FF" />
     case 'alipay-plus':
-      return <BrandMark src="/logos/alipay.svg" bg="#0A5CFF" />
+      return <BrandMark src={logo('alipay.svg')} bg="#0A5CFF" />
     case 'gold':
       return wrap(
         'linear-gradient(145deg, #FFD56A, #F5A623)',
@@ -30,27 +34,27 @@ export function ProductIcon({ id }: { id: string }) {
         </svg>,
       )
     case 'wechat':
-      return <BrandMark src="/logos/wechat.svg" bg="#07C160" />
+      return <BrandMark src={logo('wechat.svg')} bg="#07C160" />
     case 'jd':
-      return <BrandMark src="/logos/jd.svg" bg="#E1251B" invert={false} />
+      return <BrandMark src={logo('jd.svg')} bg="#E1251B" invert={false} />
     case 'starbucks':
-      return <BrandMark src="/logos/starbucks.svg" bg="#006241" />
+      return <BrandMark src={logo('starbucks.svg')} bg="#006241" />
     case 'takeout':
-      return <BrandMark src="/logos/meituan.svg" bg="#FFD100" invert={false} />
+      return <BrandMark src={logo('meituan.svg')} bg="#FFD100" invert={false} />
     case 'hotpot':
-      return <BrandMark src="/logos/haidilao.svg" bg="#C41A1A" invert={false} />
+      return <BrandMark src={logo('haidilao.svg')} bg="#C41A1A" invert={false} />
     case 'movie':
-      return <BrandMark src="/logos/maoyan.svg" bg="#E23D2A" invert={false} />
+      return <BrandMark src={logo('maoyan.svg')} bg="#E23D2A" invert={false} />
     case 'video':
-      return <BrandMark src="/logos/iqiyi.svg" bg="#00C853" invert={false} />
+      return <BrandMark src={logo('iqiyi.svg')} bg="#00C853" invert={false} />
     case 'market':
-      return <BrandMark src="/logos/walmart.svg" bg="#0071CE" invert={false} />
+      return <BrandMark src={logo('walmart.svg')} bg="#0071CE" invert={false} />
     case 'ride':
-      return <BrandMark src="/logos/didi.svg" bg="#FF6600" invert={false} />
+      return <BrandMark src={logo('didi.svg')} bg="#FF6600" invert={false} />
     case 'hotel':
-      return <BrandMark src="/logos/trip.svg" bg="#287DFA" invert={false} />
+      return <BrandMark src={logo('trip.svg')} bg="#287DFA" invert={false} />
     case 'digital':
-      return <BrandMark src="/logos/xiaomi.svg" bg="#FF6900" />
+      return <BrandMark src={logo('xiaomi.svg')} bg="#FF6900" />
     default:
       return wrap('linear-gradient(145deg, #FFB347, #FF8A00)', <span className="icon-fallback">兑</span>)
   }
