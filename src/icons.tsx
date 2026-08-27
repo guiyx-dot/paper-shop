@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 function logo(file: string) {
-  return `${import.meta.env.BASE_URL}logos/${file}`
+  return `${import.meta.env.BASE_URL}logos/${file}?v=3`
 }
 
 const wrap = (bg: string, children: ReactNode) => (
@@ -36,23 +36,23 @@ export function ProductIcon({ id }: { id: string }) {
     case 'wechat':
       return <BrandMark src={logo('wechat.svg')} bg="#07C160" />
     case 'jd':
-      return <BrandMark src={logo('jd.svg')} bg="#E1251B" invert={false} />
+      return <BrandMark src={logo('jd.svg')} bg="#E1251B" />
     case 'starbucks':
       return <BrandMark src={logo('starbucks.svg')} bg="#006241" />
     case 'takeout':
       return <BrandMark src={logo('meituan.svg')} bg="#FFD100" invert={false} />
     case 'hotpot':
-      return <BrandMark src={logo('haidilao.svg')} bg="#C41A1A" invert={false} />
+      return <BrandMark src={logo('haidilao.svg')} bg="#C41A1A" />
     case 'movie':
-      return <BrandMark src={logo('maoyan.svg')} bg="#E23D2A" invert={false} />
+      return <BrandMark src={logo('maoyan.svg')} bg="#E23D2A" />
     case 'video':
-      return <BrandMark src={logo('iqiyi.svg')} bg="#00C853" invert={false} />
+      return <BrandMark src={logo('iqiyi.svg')} bg="#00C853" />
     case 'market':
-      return <BrandMark src={logo('walmart.svg')} bg="#0071CE" invert={false} />
+      return <BrandMark src={logo('walmart.svg')} bg="#0071CE" />
     case 'ride':
-      return <BrandMark src={logo('didi.svg')} bg="#FF6600" invert={false} />
+      return <BrandMark src={logo('didi.svg')} bg="#FF6600" />
     case 'hotel':
-      return <BrandMark src={logo('trip.svg')} bg="#287DFA" invert={false} />
+      return <BrandMark src={logo('trip.svg')} bg="#287DFA" />
     case 'digital':
       return <BrandMark src={logo('xiaomi.svg')} bg="#FF6900" />
     default:
