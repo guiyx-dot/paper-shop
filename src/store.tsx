@@ -2,7 +2,7 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState,
 import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
 import type { CouponHold, Grant, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
-export const CONSUMER_KEY = 'points-mall-demo-v6'
+export const CONSUMER_KEY = 'points-mall-demo-v7'
 export const GOLD_PRODUCT_ID = 'gold'
 export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
 
@@ -190,8 +190,16 @@ function loadState(): Persisted {
     const next: Persisted = {
       ...emptyState(),
       ...parsed,
+      grants: Array.isArray(parsed.grants) ? parsed.grants : emptyState().grants,
+      quotas: {
+        ...emptyState().quotas,
+        ...(parsed.quotas ?? {}),
+      },
       goldBalance: parsed.goldBalance ?? 0,
       coupons: Array.isArray(parsed.coupons) ? parsed.coupons : [],
+    }
+    if (next.hasEverClaimed && parsed.quotas?.['corp-pay'] == null) {
+      next.quotas['corp-pay'] = PRODUCTS.find((item) => item.id === 'corp-pay')?.quota ?? 500
     }
     const legacy = parsed.voucherValue ?? 0
     if (legacy > 0 && next.goldBalance === 0 && next.coupons.length === 0) {

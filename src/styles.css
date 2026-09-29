@@ -371,6 +371,108 @@ button {
 
 .mall-page {
   padding-bottom: 12px;
+  background: #f6f3ee;
+}
+
+.mall-home-hero {
+  background: linear-gradient(180deg, #f6d889 0%, #f3c56a 48%, #f6f3ee 100%);
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+}
+
+.mall-home-nav {
+  padding: 0 20px 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.mall-home-card {
+  margin: 0 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 252, 245, 0.86), rgba(255, 236, 196, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 10px 24px rgba(180, 120, 40, 0.12);
+}
+
+.mall-home-member {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 12px;
+}
+
+.mall-home-member h2 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.member-user {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5a4a32;
+}
+
+.member-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #c9a15b;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.member-info-pill {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  color: #8a7350;
+}
+
+.member-gem {
+  width: 64px;
+  height: 64px;
+  transform: rotate(45deg);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffe9a8, #e8b23a 55%, #c48a14);
+  box-shadow: 8px 8px 0 rgba(196, 138, 20, 0.18);
+  flex-shrink: 0;
+}
+
+.mall-home-points {
+  background: linear-gradient(135deg, #ffb347, #ff7a00);
+  color: #fff;
+  padding: 12px 16px 14px;
+}
+
+.mall-home-points-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.mall-home-points span {
+  font-size: 13px;
+  opacity: 0.92;
+}
+
+.mall-home-points strong {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.mall-home-points p {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.88;
 }
 
 .mall-balance {
@@ -442,6 +544,217 @@ button {
   text-align: right;
   line-height: 1.4;
   white-space: normal;
+}
+
+.channel-stack {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 10px;
+}
+
+.channel-board {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  color: #fff;
+  text-align: left;
+}
+
+.channel-board.is-alipay {
+  background: linear-gradient(135deg, #5ab0ff 0%, #1677ff 55%, #0a5cff 100%);
+  box-shadow: 0 12px 24px rgba(22, 119, 255, 0.28);
+}
+
+.channel-board.is-wechat {
+  background: linear-gradient(135deg, #62e08f 0%, #07c160 55%, #06ad56 100%);
+  box-shadow: 0 12px 24px rgba(7, 193, 96, 0.28);
+}
+
+.channel-board-copy span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.86;
+}
+
+.channel-board-copy strong {
+  display: block;
+  margin: 4px 0 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.channel-board-copy em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.92;
+}
+
+.channel-board-copy b {
+  display: inline-block;
+  margin-top: 12px;
+  background: #fff;
+  color: #1677ff;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.channel-board.is-wechat .channel-board-copy b {
+  color: #06ad56;
+}
+
+.channel-board-mark .icon-plate {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.channel-lead {
+  padding: 4px 18px 10px;
+  font-size: 13px;
+  color: #8a939c;
+}
+
+.corp-pay-page {
+  background: #fff;
+}
+
+.corp-pay-nav {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px 12px;
+}
+
+.corp-pay-back {
+  font-size: 28px;
+  line-height: 1;
+  color: #111;
+}
+
+.corp-pay-nav h1 {
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.corp-pay-tools {
+  display: flex;
+  gap: 8px;
+  color: #333;
+  font-size: 16px;
+}
+
+.corp-pay-tools span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #e6e6e6;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+
+.corp-pay-list {
+  display: grid;
+  gap: 12px;
+  padding: 4px 16px 24px;
+}
+
+.corp-pay-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 16px 16px 18px;
+}
+
+.corp-pay-card::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  top: -30px;
+  width: 140px;
+  height: 140px;
+  border-radius: 24px;
+  transform: rotate(18deg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 70%);
+  pointer-events: none;
+}
+
+.corp-pay-card.is-maili {
+  background: linear-gradient(180deg, #ffe7c2, #ffd19a);
+}
+
+.corp-pay-card.is-corp {
+  background: linear-gradient(180deg, #ffd4c4, #ffc1b0);
+}
+
+.corp-pay-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8a4b16;
+  font-size: 15px;
+}
+
+.corp-pay-brand em {
+  font-style: normal;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.corp-pay-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #ff6a00;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.corp-pay-row {
+  margin-top: 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.corp-pay-row span {
+  display: block;
+  font-size: 12px;
+  color: #8a4b16;
+}
+
+.corp-pay-row b {
+  display: block;
+  margin-top: 6px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #5a2e0c;
+}
+
+.corp-pay-row button {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #fff;
+  color: #5a2e0c;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .cat-row {

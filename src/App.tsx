@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { ClaimPage, DetailPage, MallPage, MinePage, RecordsPage, SuccessPage, TabBar } from './pages'
+import { BenefitChannelPage, ClaimPage, CorpPayPage, DetailPage, MallPage, MinePage, RecordsPage, SuccessPage, TabBar } from './pages'
 import AdminApp from './admin/AdminApp'
 
 function useAdminHash() {
@@ -17,8 +17,10 @@ function Screen() {
   const { screen, hasEverClaimed } = useStore()
   if (!hasEverClaimed) return <ClaimPage />
   if (screen.name === 'claim') return <ClaimPage />
-  if (screen.name === 'detail') return <DetailPage productId={screen.productId} />
+  if (screen.name === 'detail') return <DetailPage productId={screen.productId} channel={screen.channel} />
   if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} />
+  if (screen.name === 'corp-pay') return <CorpPayPage fromOrderId={screen.fromOrderId} />
+  if (screen.name === 'benefit-channel') return <BenefitChannelPage channel={screen.channel} />
   if (screen.name === 'mine') return <MinePage />
   if (screen.name === 'records') return <RecordsPage />
   return <MallPage />

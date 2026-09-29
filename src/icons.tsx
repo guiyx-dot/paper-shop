@@ -35,6 +35,8 @@ export function ProductIcon({ id }: { id: string }) {
       )
     case 'wechat':
       return <BrandMark src={logo('wechat.svg')} bg="#07C160" />
+    case 'corp-pay':
+      return <BrandMark src={logo('alipay.svg')} bg="#FF6A00" />
     case 'jd':
       return <BrandMark src={logo('jd.svg')} bg="#E1251B" />
     case 'starbucks':

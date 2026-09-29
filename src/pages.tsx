@@ -1,9 +1,9 @@
-import { USER, PRODUCTS, PRODUCT_TONES } from './data'
+import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, benefitsInChannel, CORP_PAY_ID } from './data'
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
 import { useStore } from './store'
 import { useState, type CSSProperties } from 'react'
-import type { PayMethod, Product } from './types'
+import type { BenefitChannel, PayMethod, Product } from './types'
 
 function money(n: number) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2)
@@ -37,7 +37,7 @@ export function TabBar({ current }: { current: 'mall' | 'mine' }) {
     <div className="tab-bar">
       <button className={current === 'mall' ? 'tab active' : 'tab'} onClick={() => go({ name: 'mall' })}>
         <NavIcon name="mall" active={current === 'mall'} />
-        商城
+        首页
       </button>
       <button className={current === 'mine' ? 'tab active' : 'tab'} onClick={() => go({ name: 'mine' })}>
         <NavIcon name="mine" active={current === 'mine'} />
@@ -128,7 +128,6 @@ export function MallPage() {
   const { points, go, pendingAmount, pendingCount, generalPoints, goldBalance, couponTotal } = useStore()
   const [category, setCategory] = useState<'all' | 'dining' | 'life' | 'travel'>('all')
 
-  const benefitList = PRODUCTS.filter((item) => item.zone === 'benefit')
   const pointsList = PRODUCTS.filter((item) => {
     if (item.zone !== 'points') return false
     if (category !== 'all' && item.category !== category) return false
@@ -137,11 +136,29 @@ export function MallPage() {
 
   return (
     <div className="page mall-page">
-      <StatusBar />
-      <NavBar title="积分兑换商城" />
-      <div className="mall-balance">
-        <span>当前会员积分</span>
-        <strong>{points}</strong>
+      <div className="mall-home-hero">
+        <StatusBar />
+        <div className="mall-home-nav">积分兑换商城</div>
+        <div className="mall-home-card">
+          <div className="mall-home-member">
+            <div>
+              <h2>支车宝会员中心</h2>
+              <div className="member-user">
+                <span className="member-avatar">{USER.name.slice(0, 1)}</span>
+                <span>{USER.name}</span>
+                <span className="member-info-pill">个人信息 ›</span>
+              </div>
+            </div>
+            <div className="member-gem" aria-hidden="true" />
+          </div>
+          <div className="mall-home-points">
+            <div className="mall-home-points-row">
+              <span>当前会员积分</span>
+              <strong>{points}</strong>
+            </div>
+            <p>通用积分自发放起 90 天有效</p>
+          </div>
+        </div>
       </div>
       {pendingCount > 0 ? (
         <button className="pending-banner" onClick={() => go({ name: 'claim' })}>
@@ -154,10 +171,23 @@ export function MallPage() {
         <div className="mall-section-head">
           <h2>权益专区</h2>
         </div>
-        <div className="product-grid">
-          {benefitList.map((item) => (
-            <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
-              <ProductCardBody product={item} />
+        <div className="channel-stack">
+          {BENEFIT_CHANNELS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`channel-board is-${item.id}`}
+              onClick={() => go({ name: 'benefit-channel', channel: item.id })}
+            >
+              <div className="channel-board-copy">
+                <span>权益专区</span>
+                <strong>{item.name}</strong>
+                <em>{item.sub}</em>
+                <b>进入 ›</b>
+              </div>
+              <div className="channel-board-mark">
+                <ProductIcon id={item.id} />
+              </div>
             </button>
           ))}
         </div>
@@ -196,6 +226,31 @@ export function MallPage() {
   )
 }
 
+export function BenefitChannelPage({ channel }: { channel: BenefitChannel }) {
+  const { go } = useStore()
+  const meta = BENEFIT_CHANNELS.find((item) => item.id === channel)
+  const list = benefitsInChannel(channel)
+
+  return (
+    <div className="page mall-page">
+      <StatusBar />
+      <NavBar title={meta?.name ?? '权益专区'} onBack={() => go({ name: 'mall' })} />
+      <p className="channel-lead">{meta?.sub}</p>
+      <div className="product-grid">
+        {list.map((item) => (
+          <button
+            key={item.id}
+            className="product-card"
+            onClick={() => go({ name: 'detail', productId: item.id, channel })}
+          >
+            <ProductCardBody product={item} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ProductCardBody({ product }: { product: Product }) {
   const { unavailable, remainingQuota } = useStore()
   const reason = unavailable(product)
@@ -219,7 +274,7 @@ function ProductCardBody({ product }: { product: Product }) {
   )
 }
 
-export function DetailPage({ productId }: { productId: string }) {
+export function DetailPage({ productId, channel }: { productId: string; channel?: BenefitChannel }) {
   const {
     go,
     points,
@@ -233,6 +288,7 @@ export function DetailPage({ productId }: { productId: string }) {
     couponTotal,
     userFeeRate,
     quotePay,
+    orders,
   } = useStore()
   const [confirm, setConfirm] = useState(false)
   const [payWith, setPayWith] = useState<PayMethod>('points')
@@ -252,11 +308,14 @@ export function DetailPage({ productId }: { productId: string }) {
   const afterPoints = (product.zone === 'points' ? generalPoints : points) - (product.zone === 'benefit' ? batchCost : quote.pointsPaid)
   const selectedCouponId = couponId ?? couponQuote.couponProductId
   const payUnit = payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'
+  const latestBenefitOrder = orders.find((item) => item.productId === product.id && (item.received ?? 0) > 0)
+  const benefitFinished = product.zone === 'benefit' && quotaLeft <= 0 && Boolean(latestBenefitOrder)
+  const backScreen = channel ? { name: 'benefit-channel' as const, channel } : { name: 'mall' as const }
 
   return (
     <div className="page detail-page">
       <StatusBar />
-      <NavBar title="商品详情" onBack={() => go({ name: 'mall' })} />
+      <NavBar title="商品详情" onBack={() => go(backScreen)} />
       <div className="hero-block">
         <ProductIcon id={product.id} />
         <h2>{product.name}</h2>
@@ -283,7 +342,16 @@ export function DetailPage({ productId }: { productId: string }) {
           <Row label="用户承担后到账" value={`${received} 元${product.name}`} />
         ) : null}
         {product.zone === 'benefit' ? (
-          <Row label="兑后用途" value={product.id === 'gold' ? '入通用金余额，可兑积分专区' : '入抵扣券，可兑积分专区'} />
+          <Row
+            label="兑后用途"
+            value={
+              product.id === 'gold'
+                ? '入通用金余额，可兑积分专区'
+                : product.id === CORP_PAY_ID
+                  ? '跳转因公付（企业权益）使用'
+                  : '入抵扣券，可兑积分专区'
+            }
+          />
         ) : null}
         {product.zone === 'points' ? (
           <Row
@@ -315,12 +383,18 @@ export function DetailPage({ productId }: { productId: string }) {
           {reason
             ? reason.hint
             : product.zone === 'benefit'
-              ? `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
+              ? product.id === CORP_PAY_ID
+                ? `${product.usage} 兑成后点击跳转至因公付（企业权益）。`
+                : `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
               : '支付时竖向选择积分、通用金或抵扣券，一次只用一种。余额不够请先兑权益专区，或改用其他方式。'}
         </p>
       </div>
       <div className="bottom-cta">
-        {!canAny ? (
+        {benefitFinished && product.id === CORP_PAY_ID ? (
+          <button className="btn-primary" type="button" onClick={() => go({ name: 'corp-pay' })}>
+            点击跳转
+          </button>
+        ) : !canAny ? (
           <button className="btn-primary is-disabled" disabled>
             {reason?.label ?? '兑换结束'}
           </button>
@@ -423,8 +497,9 @@ export function DetailPage({ productId }: { productId: string }) {
             )}
             {product.zone === 'benefit' ? (
               <p className="modal-tip">
-                到账约 {received} 元{product.name}
-                {product.id === 'gold' ? '（计入通用金余额）' : '（计入抵扣券）'}，之后可在积分专区支付
+                {product.id === CORP_PAY_ID
+                  ? `到账约 ${received} 元因公付额度，兑换后点击跳转使用`
+                  : `到账约 ${received} 元${product.name}${product.id === 'gold' ? '（计入通用金余额）' : '（计入抵扣券）'}，之后可在积分专区支付`}
               </p>
             ) : null}
             <button
@@ -496,7 +571,9 @@ export function SuccessPage({ orderId }: { orderId: string }) {
         </p>
         {order.received ? (
           <p>
-            到账 {order.received} 元{order.productId === 'gold' ? '通用金' : '抵扣券'}，可在积分专区支付
+            {order.productId === CORP_PAY_ID
+              ? `到账 ${order.received} 元因公付额度，点击跳转即可使用`
+              : `到账 ${order.received} 元${order.productId === 'gold' ? '通用金' : '抵扣券'}，可在积分专区支付`}
           </p>
         ) : null}
       </div>
@@ -530,9 +607,76 @@ export function SuccessPage({ orderId }: { orderId: string }) {
         <Row label="状态" value="已完成" success />
       </div>
       <div className="bottom-cta">
-        <button className="btn-primary" onClick={() => go({ name: 'mall' })}>
-          返回商城
+        {order.productId === CORP_PAY_ID ? (
+          <>
+            <button className="btn-primary" type="button" onClick={() => go({ name: 'corp-pay', fromOrderId: order.id })}>
+              点击跳转
+            </button>
+            <button className="btn-text" onClick={() => go({ name: 'mall' })}>
+              返回商城
+            </button>
+          </>
+        ) : (
+          <button className="btn-primary" onClick={() => go({ name: 'mall' })}>
+            返回商城
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function CorpPayPage({ fromOrderId }: { fromOrderId?: string }) {
+  const { go } = useStore()
+
+  return (
+    <div className="page corp-pay-page">
+      <StatusBar />
+      <div className="corp-pay-nav">
+        <button
+          type="button"
+          className="corp-pay-back"
+          onClick={() => (fromOrderId ? go({ name: 'success', orderId: fromOrderId }) : go({ name: 'mall' }))}
+          aria-label="返回"
+        >
+          ‹
         </button>
+        <h1>因公付（企业权益）</h1>
+        <div className="corp-pay-tools" aria-hidden="true">
+          <span>☆</span>
+          <span>⋯</span>
+          <span>○</span>
+        </div>
+      </div>
+      <div className="corp-pay-list">
+        <div className="corp-pay-card is-maili">
+          <div className="corp-pay-brand">
+            <span className="corp-pay-logo">支</span>
+            <strong>麦粒</strong>
+          </div>
+          <div className="corp-pay-row">
+            <div>
+              <span>可用额度（元）</span>
+              <b>0.00</b>
+            </div>
+            <button type="button">进入</button>
+          </div>
+        </div>
+        <div className="corp-pay-card is-corp">
+          <div className="corp-pay-brand">
+            <span className="corp-pay-logo">支</span>
+            <strong>
+              因公付 <em>| 麦粒</em>
+            </strong>
+          </div>
+          <div className="corp-pay-row">
+            <div>
+              <span>可用额度（元）</span>
+              <b>0.00</b>
+            </div>
+            <button type="button">进入</button>
+          </div>
+        </div>
       </div>
     </div>
   )

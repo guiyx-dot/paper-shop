@@ -3,11 +3,15 @@ export type Category = 'dining' | 'life' | 'travel'
 export type BenefitStatus = 'available' | 'locked' | 'ended'
 export type Tab = 'mall' | 'mine'
 
+export type BenefitChannel = 'alipay' | 'wechat'
+
 export type Screen =
   | { name: 'claim' }
   | { name: 'mall' }
-  | { name: 'detail'; productId: string }
+  | { name: 'benefit-channel'; channel: BenefitChannel }
+  | { name: 'detail'; productId: string; channel?: BenefitChannel }
   | { name: 'success'; orderId: string }
+  | { name: 'corp-pay'; fromOrderId?: string }
   | { name: 'mine' }
   | { name: 'records' }
 
@@ -17,6 +21,7 @@ export type Product = {
   subtitle: string
   zone: Zone
   category?: Category
+  channels?: BenefitChannel[]
   cost: number
   validityDays: number
   stockLabel: string

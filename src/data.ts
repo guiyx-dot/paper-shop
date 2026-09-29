@@ -1,4 +1,4 @@
-import type { Grant, Product } from './types'
+import type { BenefitChannel, Grant, Product } from './types'
 
 export const USER = {
   name: '桂*徽',
@@ -29,6 +29,7 @@ export const PRODUCTS: Product[] = [
     stockLabel: '充足',
     benefitStatus: 'available',
     quota: 500,
+    channels: ['alipay', 'wechat'],
     description: '兑换后可用于指定消费场景抵扣，具体以发放说明为准。',
     usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
@@ -42,6 +43,7 @@ export const PRODUCTS: Product[] = [
     stockLabel: '充足',
     benefitStatus: 'available',
     quota: 500,
+    channels: ['alipay'],
     description: '兑换后将发放至绑定账户，可在支持的消费场景中抵扣使用。',
     usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
@@ -55,6 +57,7 @@ export const PRODUCTS: Product[] = [
     stockLabel: '充足',
     benefitStatus: 'available',
     quota: 500,
+    channels: ['alipay'],
     description: '兑换后将发放至绑定账户，可在支持的消费场景中抵扣使用。',
     usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
@@ -68,7 +71,22 @@ export const PRODUCTS: Product[] = [
     stockLabel: '充足',
     benefitStatus: 'available',
     quota: 200,
+    channels: ['wechat'],
     description: '兑换后将发放至微信卡包，可在支持的商户中抵扣使用。',
+    usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
+  },
+  {
+    id: 'corp-pay',
+    name: '因公付',
+    subtitle: '企业权益',
+    zone: 'benefit',
+    cost: 1,
+    validityDays: 90,
+    stockLabel: '充足',
+    benefitStatus: 'available',
+    quota: 500,
+    channels: ['alipay'],
+    description: '兑换后跳转因公付（企业权益）使用，额度发放至企业账户。',
     usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
   },
   {
@@ -184,6 +202,17 @@ export const PRODUCTS: Product[] = [
   },
 ]
 
+export const BENEFIT_CHANNELS: { id: BenefitChannel; name: string; sub: string }[] = [
+  { id: 'alipay', name: '支付宝', sub: '通用金、通用券、通用券plus、因公付' },
+  { id: 'wechat', name: '微信', sub: '通用金、微信立减金' },
+]
+
+export function benefitsInChannel(channel: BenefitChannel) {
+  return PRODUCTS.filter((item) => item.zone === 'benefit' && item.channels?.includes(channel))
+}
+
+export const CORP_PAY_ID = 'corp-pay'
+
 export const CATEGORIES: { id: 'all' | 'dining' | 'life' | 'travel'; label: string }[] = [
   { id: 'all', label: '全部' },
   { id: 'dining', label: '餐饮' },
@@ -196,6 +225,7 @@ export const PRODUCT_TONES: Record<string, [string, string]> = {
   alipay: ['#5AB0FF', '#1677FF'],
   'alipay-plus': ['#7EC8FF', '#0A5CFF'],
   wechat: ['#62E08F', '#07C160'],
+  'corp-pay': ['#FFB347', '#FF6A00'],
   starbucks: ['#4FB37A', '#006241'],
   takeout: ['#FFE566', '#FFD100'],
   hotpot: ['#FF8A7A', '#C41A1A'],
