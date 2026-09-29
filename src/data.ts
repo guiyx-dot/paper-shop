@@ -202,9 +202,9 @@ export const PRODUCTS: Product[] = [
   },
 ]
 
-export const BENEFIT_CHANNELS: { id: BenefitChannel; name: string; sub: string; short: string }[] = [
-  { id: 'alipay', name: '支付宝', sub: '通用金、通用券、通用券plus、因公付', short: '金 / 券 / plus / 因公付' },
-  { id: 'wechat', name: '微信', sub: '通用金、微信立减金', short: '金 / 立减金' },
+export const BENEFIT_CHANNELS: { id: BenefitChannel; name: string; sub: string }[] = [
+  { id: 'alipay', name: '支付宝', sub: '通用金、通用券、通用券plus、因公付' },
+  { id: 'wechat', name: '微信', sub: '通用金、微信立减金' },
 ]
 
 export function benefitsInChannel(channel: BenefitChannel) {

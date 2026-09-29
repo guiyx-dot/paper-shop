@@ -124,21 +124,21 @@ export function ClaimPage() {
   )
 }
 
-function ChannelBoards({ layout }: { layout: 'stack' | 'row' }) {
+function ChannelBoards() {
   const { go } = useStore()
   return (
-    <div className={layout === 'row' ? 'channel-stack is-row' : 'channel-stack'}>
+    <div className="channel-stack">
       {BENEFIT_CHANNELS.map((item) => (
         <button
           key={item.id}
           type="button"
-          className={`channel-board is-${item.id}${layout === 'row' ? ' is-side' : ''}`}
+          className={`channel-board is-${item.id}`}
           onClick={() => go({ name: 'benefit-channel', channel: item.id })}
         >
           <div className="channel-board-copy">
             <span>权益专区</span>
             <strong>{item.name}</strong>
-            <em>{layout === 'row' ? item.short : item.sub}</em>
+            <em>{item.sub}</em>
             <b>进入 ›</b>
           </div>
           <div className="channel-board-mark">
@@ -152,7 +152,6 @@ function ChannelBoards({ layout }: { layout: 'stack' | 'row' }) {
 
 export function MallPage() {
   const { points, go, pendingAmount, pendingCount } = useStore()
-  const [channelLayout, setChannelLayout] = useState<'stack' | 'row'>('stack')
 
   return (
     <div className="page mall-page">
@@ -190,16 +189,8 @@ export function MallPage() {
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>权益专区</h2>
-          <div className="layout-pick">
-            <button type="button" className={channelLayout === 'stack' ? 'on' : ''} onClick={() => setChannelLayout('stack')}>
-              上下
-            </button>
-            <button type="button" className={channelLayout === 'row' ? 'on' : ''} onClick={() => setChannelLayout('row')}>
-              左右
-            </button>
-          </div>
         </div>
-        <ChannelBoards layout={channelLayout} />
+        <ChannelBoards />
       </section>
 
       <section className="mall-section">
