@@ -124,15 +124,35 @@ export function ClaimPage() {
   )
 }
 
-export function MallPage() {
-  const { points, go, pendingAmount, pendingCount, generalPoints, goldBalance, couponTotal } = useStore()
-  const [category, setCategory] = useState<'all' | 'dining' | 'life' | 'travel'>('all')
+function ChannelBoards({ layout }: { layout: 'stack' | 'row' }) {
+  const { go } = useStore()
+  return (
+    <div className={layout === 'row' ? 'channel-stack is-row' : 'channel-stack'}>
+      {BENEFIT_CHANNELS.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`channel-board is-${item.id}${layout === 'row' ? ' is-side' : ''}`}
+          onClick={() => go({ name: 'benefit-channel', channel: item.id })}
+        >
+          <div className="channel-board-copy">
+            <span>权益专区</span>
+            <strong>{item.name}</strong>
+            <em>{layout === 'row' ? item.short : item.sub}</em>
+            <b>进入 ›</b>
+          </div>
+          <div className="channel-board-mark">
+            <ProductIcon id={item.id} />
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
 
-  const pointsList = PRODUCTS.filter((item) => {
-    if (item.zone !== 'points') return false
-    if (category !== 'all' && item.category !== category) return false
-    return true
-  })
+export function MallPage() {
+  const { points, go, pendingAmount, pendingCount } = useStore()
+  const [channelLayout, setChannelLayout] = useState<'stack' | 'row'>('stack')
 
   return (
     <div className="page mall-page">
@@ -170,58 +190,91 @@ export function MallPage() {
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>权益专区</h2>
-        </div>
-        <div className="channel-stack">
-          {BENEFIT_CHANNELS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`channel-board is-${item.id}`}
-              onClick={() => go({ name: 'benefit-channel', channel: item.id })}
-            >
-              <div className="channel-board-copy">
-                <span>权益专区</span>
-                <strong>{item.name}</strong>
-                <em>{item.sub}</em>
-                <b>进入 ›</b>
-              </div>
-              <div className="channel-board-mark">
-                <ProductIcon id={item.id} />
-              </div>
+          <div className="layout-pick">
+            <button type="button" className={channelLayout === 'stack' ? 'on' : ''} onClick={() => setChannelLayout('stack')}>
+              上下
             </button>
-          ))}
+            <button type="button" className={channelLayout === 'row' ? 'on' : ''} onClick={() => setChannelLayout('row')}>
+              左右
+            </button>
+          </div>
         </div>
+        <ChannelBoards layout={channelLayout} />
       </section>
 
       <section className="mall-section">
         <div className="mall-section-head">
           <h2>积分专区</h2>
-          <p>{zonePayHint(generalPoints, goldBalance, couponTotal)}</p>
         </div>
-        <div className="cat-row">
-          {[
+        <button className="zone-entry" type="button" onClick={() => go({ name: 'points-zone' })}>
+          <div className="zone-entry-copy">
+            <span className="zone-entry-kicker">福多多提供</span>
+            <strong>积分专区</strong>
+            <span className="zone-entry-sub">星巴克、外卖、出行等品牌好物，用通用积分、通用金或券兑换</span>
+            <span className="zone-entry-go">进入 ›</span>
+          </div>
+          <div className="mall-banner-visual" aria-hidden="true">
+            <span className="mall-chip mall-chip-a">
+              <ProductIcon id="starbucks" />
+            </span>
+            <span className="mall-chip mall-chip-b">
+              <ProductIcon id="takeout" />
+            </span>
+            <span className="mall-chip mall-chip-c">
+              <ProductIcon id="ride" />
+            </span>
+            <span className="mall-chip mall-chip-d">
+              <ProductIcon id="video" />
+            </span>
+          </div>
+        </button>
+      </section>
+    </div>
+  )
+}
+
+export function PointsZonePage() {
+  const { go, generalPoints, goldBalance, couponTotal } = useStore()
+  const [category, setCategory] = useState<'all' | 'dining' | 'life' | 'travel'>('all')
+  const pointsList = PRODUCTS.filter((item) => {
+    if (item.zone !== 'points') return false
+    if (category !== 'all' && item.category !== category) return false
+    return true
+  })
+
+  return (
+    <div className="page fuduo-page">
+      <StatusBar />
+      <NavBar title="积分专区" onBack={() => go({ name: 'mall' })} />
+      <div className="fuduo-bar">本页嵌入福多多 H5，商品与履约由对方提供</div>
+      <div className="mall-balance is-stack">
+        <div className="mall-balance-row">
+          <span>可用积分</span>
+          <strong>{generalPoints}</strong>
+        </div>
+        <p className="mall-balance-expire">{zonePayHint(generalPoints, goldBalance, couponTotal)}</p>
+      </div>
+      <div className="cat-row">
+        {(
+          [
             ['all', '全部'],
             ['dining', '餐饮'],
             ['life', '生活'],
             ['travel', '出行'],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              className={category === id ? 'cat on' : 'cat'}
-              onClick={() => setCategory(id as typeof category)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="product-grid">
-          {pointsList.map((item) => (
-            <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
-              <ProductCardBody product={item} />
-            </button>
-          ))}
-        </div>
-      </section>
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} className={category === id ? 'cat on' : 'cat'} onClick={() => setCategory(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="product-grid is-zone">
+        {pointsList.map((item) => (
+          <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
+            <ProductCardBody product={item} />
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -310,7 +363,11 @@ export function DetailPage({ productId, channel }: { productId: string; channel?
   const payUnit = payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'
   const latestBenefitOrder = orders.find((item) => item.productId === product.id && (item.received ?? 0) > 0)
   const benefitFinished = product.zone === 'benefit' && quotaLeft <= 0 && Boolean(latestBenefitOrder)
-  const backScreen = channel ? { name: 'benefit-channel' as const, channel } : { name: 'mall' as const }
+  const backScreen = channel
+    ? { name: 'benefit-channel' as const, channel }
+    : product.zone === 'points'
+      ? { name: 'points-zone' as const }
+      : { name: 'mall' as const }
 
   return (
     <div className="page detail-page">
@@ -552,7 +609,7 @@ export function SuccessPage({ orderId }: { orderId: string }) {
       <StatusBar />
       <NavBar
         title="兑换详情"
-        onBack={() => go({ name: 'mall' })}
+        onBack={() => go(product?.zone === 'points' ? { name: 'points-zone' } : { name: 'mall' })}
         right={
           <button className="nav-text" onClick={() => go({ name: 'records' })}>
             记录
@@ -617,8 +674,11 @@ export function SuccessPage({ orderId }: { orderId: string }) {
             </button>
           </>
         ) : (
-          <button className="btn-primary" onClick={() => go({ name: 'mall' })}>
-            返回商城
+          <button
+            className="btn-primary"
+            onClick={() => go(product?.zone === 'points' ? { name: 'points-zone' } : { name: 'mall' })}
+          >
+            {product?.zone === 'points' ? '返回积分专区' : '返回商城'}
           </button>
         )}
       </div>

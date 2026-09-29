@@ -8,6 +8,7 @@ export type BenefitChannel = 'alipay' | 'wechat'
 export type Screen =
   | { name: 'claim' }
   | { name: 'mall' }
+  | { name: 'points-zone' }
   | { name: 'benefit-channel'; channel: BenefitChannel }
   | { name: 'detail'; productId: string; channel?: BenefitChannel }
   | { name: 'success'; orderId: string }
