@@ -82,11 +82,12 @@ button {
 
 .layout-switch button {
   height: 28px;
-  padding: 0 12px;
+  padding: 0 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #8e8e93;
+  white-space: nowrap;
 }
 
 .layout-switch button.on {
@@ -112,6 +113,167 @@ button {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.stage.is-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 72px 24px 40px;
+  overflow-x: auto;
+}
+
+.phone-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 88px;
+}
+
+.phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage.is-pair .phone {
+  zoom: 0.78;
+}
+
+.phone-caption {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b6358;
+}
+
+.labor-page {
+  background: #f5f6f8;
+  padding-bottom: 16px;
+}
+
+.labor-page .mall-home-hero {
+  margin-bottom: 0;
+}
+
+.extract-block {
+  margin: 12px 12px 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+}
+
+.extract-block h3,
+.extract-list-head {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.extract-account {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.extract-account-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.extract-alipay .icon-plate {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.extract-alipay .brand-logo {
+  width: 14px;
+  height: 14px;
+}
+
+.extract-switch {
+  color: #c8c8c8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.extract-avail {
+  margin-top: 16px;
+  background: #fff6ee;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+  color: #333;
+}
+
+.extract-avail strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.extract-list-head {
+  padding: 20px 16px 8px;
+}
+
+.extract-tip {
+  padding: 0 16px 10px;
+  font-size: 12px;
+  color: #b0b0b0;
+  line-height: 1.55;
+}
+
+.extract-card {
+  background: #fff;
+  margin: 0 12px 10px;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.extract-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.extract-amount {
+  color: #ff7a00;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.extract-name {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+.extract-now {
+  flex: none;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #ff8a00;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.extract-meta {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c4c4c4;
+  line-height: 1.7;
 }
 
 .page {
@@ -769,6 +931,15 @@ button {
   padding: 6px 16px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.zone-entry.is-benefit {
+  background: linear-gradient(135deg, #ffb347 0%, #ff8a00 48%, #ff6a00 100%);
+  box-shadow: 0 12px 24px rgba(255, 138, 0, 0.28);
+}
+
+.zone-entry.is-benefit .zone-entry-go {
+  color: #c45c00;
 }
 
 .mall-banner-visual {
@@ -1705,15 +1876,21 @@ button {
 }
 
 @media (max-width: 430px) {
-  .stage {
+  .stage:not(.is-pair) {
     padding: 0;
   }
 
-  .phone {
+  .stage:not(.is-pair) .phone {
     width: 100%;
     height: 100vh;
     height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .stage.is-pair {
+    align-items: flex-start;
   }
 }

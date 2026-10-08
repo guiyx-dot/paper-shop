@@ -217,6 +217,18 @@ export const BENEFIT_PRODUCTS = PRODUCTS.filter((item) => item.zone === 'benefit
 
 export const HOME_BENEFIT_PRODUCTS = BENEFIT_PRODUCTS.filter((item) => item.id !== CORP_PAY_ID)
 
+export const LABOR_EXTRACT = {
+  available: 44.01,
+  accountMask: '(****1101)',
+  tip: '如需转出至微信红包，请前往【支车宝】微信服务号操作。',
+  feeNote: '该费用非平台收取，如有疑问请咨询商家',
+  records: [
+    { id: 'ex1', name: '臻享权益包', amount: 8, expected: 7.864, feeRate: 2 },
+    { id: 'ex2', name: '臻享权益包', amount: 1, expected: 0.988, feeRate: 2 },
+    { id: 'ex3', name: '臻享权益包', amount: 1, expected: 0.988, feeRate: 2 },
+  ],
+}
+
 export const CATEGORIES: { id: 'all' | 'dining' | 'life' | 'travel' | 'more'; label: string }[] = [
   { id: 'all', label: '全部' },
   { id: 'dining', label: '餐饮' },

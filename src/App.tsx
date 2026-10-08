@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { BenefitChannelPage, ClaimPage, CorpPayPage, DetailPage, MallPage, MinePage, PointsZonePage, RecordsPage, SuccessPage, TabBar } from './pages'
+import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, SuccessPage, TabBar } from './pages'
 import AdminApp from './admin/AdminApp'
 import type { HomeLayout } from './types'
 
@@ -22,6 +22,7 @@ function Screen() {
   if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} from={screen.from} />
   if (screen.name === 'corp-pay') return <CorpPayPage fromOrderId={screen.fromOrderId} />
   if (screen.name === 'benefit-channel') return <BenefitChannelPage channel={screen.channel} />
+  if (screen.name === 'benefit-zone') return <BenefitZonePage />
   if (screen.name === 'points-zone') return <PointsZonePage />
   if (screen.name === 'mine') return <MinePage />
   if (screen.name === 'records') return <RecordsPage />
@@ -44,6 +45,7 @@ function PhoneShell() {
 const LAYOUTS: { id: HomeLayout; label: string }[] = [
   { id: 'zones', label: '双专区' },
   { id: 'flat', label: '积分平铺' },
+  { id: 'labor', label: '连续劳务区分' },
 ]
 
 function StageChrome() {
@@ -69,17 +71,56 @@ function StageChrome() {
   )
 }
 
+function LaborExtractPhone() {
+  return (
+    <>
+      <div className="phone-body">
+        <LaborExtractPage />
+      </div>
+      <TabBar current="mall" locked />
+    </>
+  )
+}
+
+function DemoStage() {
+  const { homeLayout } = useStore()
+  if (homeLayout === 'labor') {
+    return (
+      <div className="stage is-pair">
+        <StageChrome />
+        <div className="phone-pair">
+          <div className="phone-wrap">
+            <div className="phone-caption">积分商城</div>
+            <div className="phone">
+              <PhoneShell />
+            </div>
+          </div>
+          <div className="phone-wrap">
+            <div className="phone-caption">连续劳务</div>
+            <div className="phone">
+              <LaborExtractPhone />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="stage">
+      <StageChrome />
+      <div className="phone">
+        <PhoneShell />
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const admin = useAdminHash()
   if (admin) return <AdminApp />
   return (
-    <div className="stage">
-      <StoreProvider>
-        <StageChrome />
-        <div className="phone">
-          <PhoneShell />
-        </div>
-      </StoreProvider>
-    </div>
+    <StoreProvider>
+      <DemoStage />
+    </StoreProvider>
   )
 }

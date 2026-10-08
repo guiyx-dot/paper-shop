@@ -8,7 +8,9 @@ export const GOLD_PRODUCT_ID = 'gold'
 export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
 
 function loadHomeLayout(): HomeLayout {
-  return sessionStorage.getItem(HOME_LAYOUT_KEY) === 'flat' ? 'flat' : 'zones'
+  const raw = sessionStorage.getItem(HOME_LAYOUT_KEY)
+  if (raw === 'flat' || raw === 'labor') return raw
+  return 'zones'
 }
 
 type Persisted = {
@@ -281,7 +283,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setHomeLayout = (layout: HomeLayout) => {
     sessionStorage.setItem(HOME_LAYOUT_KEY, layout)
     setHomeLayoutState(layout)
-    if (layout === 'flat' && screen.name === 'points-zone') setScreen({ name: 'mall' })
+    if (layout !== 'zones' && (screen.name === 'points-zone' || screen.name === 'benefit-zone')) {
+      setScreen({ name: 'mall' })
+    }
+    if (layout === 'labor') setScreen({ name: 'mall' })
   }
 
   const claimPending = () => {

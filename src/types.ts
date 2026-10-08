@@ -4,15 +4,18 @@ export type BenefitStatus = 'available' | 'locked' | 'ended'
 export type Tab = 'mall' | 'mine'
 
 export type BenefitChannel = 'alipay' | 'wechat'
-export type HomeLayout = 'zones' | 'flat'
+export type HomeLayout = 'zones' | 'flat' | 'labor'
+
+export type ZoneFrom = 'points-zone' | 'benefit-zone'
 
 export type Screen =
   | { name: 'claim' }
   | { name: 'mall' }
   | { name: 'points-zone' }
+  | { name: 'benefit-zone' }
   | { name: 'benefit-channel'; channel: BenefitChannel }
-  | { name: 'detail'; productId: string; channel?: BenefitChannel; from?: 'points-zone' }
-  | { name: 'success'; orderId: string; from?: 'points-zone' }
+  | { name: 'detail'; productId: string; channel?: BenefitChannel; from?: ZoneFrom }
+  | { name: 'success'; orderId: string; from?: ZoneFrom }
   | { name: 'corp-pay'; fromOrderId?: string }
   | { name: 'mine' }
   | { name: 'records' }

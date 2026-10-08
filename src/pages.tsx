@@ -1,9 +1,9 @@
-import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID } from './data'
+import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID, LABOR_EXTRACT } from './data'
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
 import { useStore } from './store'
 import { useState, type CSSProperties } from 'react'
-import type { BenefitChannel, PayMethod, Product } from './types'
+import type { BenefitChannel, PayMethod, Product, ZoneFrom } from './types'
 
 function money(n: number) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2)
@@ -31,15 +31,25 @@ function PayRadio({ on }: { on: boolean }) {
   return <span className={on ? 'pay-radio on' : 'pay-radio'} />
 }
 
-export function TabBar({ current }: { current: 'mall' | 'mine' }) {
+export function TabBar({ current, locked }: { current: 'mall' | 'mine'; locked?: boolean }) {
   const { go } = useStore()
   return (
     <div className="tab-bar">
-      <button className={current === 'mall' ? 'tab active' : 'tab'} onClick={() => go({ name: 'mall' })}>
+      <button
+        className={current === 'mall' ? 'tab active' : 'tab'}
+        onClick={() => {
+          if (!locked) go({ name: 'mall' })
+        }}
+      >
         <NavIcon name="mall" active={current === 'mall'} />
         首页
       </button>
-      <button className={current === 'mine' ? 'tab active' : 'tab'} onClick={() => go({ name: 'mine' })}>
+      <button
+        className={current === 'mine' ? 'tab active' : 'tab'}
+        onClick={() => {
+          if (!locked) go({ name: 'mine' })
+        }}
+      >
         <NavIcon name="mine" active={current === 'mine'} />
         我的
       </button>
@@ -137,6 +147,7 @@ function PointsZoneShelf({ variant }: { variant: 'page' | 'home' }) {
   const { go, generalPoints, goldBalance, couponTotal } = useStore()
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['id']>('all')
   const list = zoneProducts(category)
+  const cats = variant === 'page' ? CATEGORIES.filter((item) => item.id !== 'more') : CATEGORIES
 
   return (
     <>
@@ -153,7 +164,7 @@ function PointsZoneShelf({ variant }: { variant: 'page' | 'home' }) {
         </>
       ) : null}
       <div className="cat-row">
-        {CATEGORIES.map((item) => (
+        {cats.map((item) => (
           <button key={item.id} className={category === item.id ? 'cat on' : 'cat'} onClick={() => setCategory(item.id)}>
             {item.label}
           </button>
@@ -180,35 +191,43 @@ function PointsZoneShelf({ variant }: { variant: 'page' | 'home' }) {
   )
 }
 
+function MallMemberHero({ variant = 'points' }: { variant?: 'points' | 'withdraw' }) {
+  const { points } = useStore()
+  const withdraw = variant === 'withdraw'
+  return (
+    <div className="mall-home-hero">
+      <StatusBar />
+      <div className="mall-home-nav">{withdraw ? '连续劳务' : '积分兑换商城'}</div>
+      <div className="mall-home-card">
+        <div className="mall-home-member">
+          <div>
+            <h2>{withdraw ? '用户中心' : '支车宝会员中心'}</h2>
+            <div className="member-user">
+              <span className="member-avatar">{USER.name.slice(0, 1)}</span>
+              <span>{USER.name}</span>
+              <span className="member-info-pill">个人信息 ›</span>
+            </div>
+          </div>
+          <div className="member-gem" aria-hidden="true" />
+        </div>
+        <div className="mall-home-points">
+          <div className="mall-home-points-row">
+            <span>{withdraw ? '可提现金额' : '当前会员积分'}</span>
+            <strong>{withdraw ? LABOR_EXTRACT.available : points}</strong>
+          </div>
+          <p>{withdraw ? '自发放起 90 天有效' : '通用积分自发放起 90 天有效'}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function MallPage() {
-  const { points, go, pendingAmount, pendingCount, homeLayout } = useStore()
+  const { go, pendingAmount, pendingCount, homeLayout } = useStore()
 
   return (
     <div className="page mall-page">
-      <div className="mall-home-hero">
-        <StatusBar />
-        <div className="mall-home-nav">积分兑换商城</div>
-        <div className="mall-home-card">
-          <div className="mall-home-member">
-            <div>
-              <h2>支车宝会员中心</h2>
-              <div className="member-user">
-                <span className="member-avatar">{USER.name.slice(0, 1)}</span>
-                <span>{USER.name}</span>
-                <span className="member-info-pill">个人信息 ›</span>
-              </div>
-            </div>
-            <div className="member-gem" aria-hidden="true" />
-          </div>
-          <div className="mall-home-points">
-            <div className="mall-home-points-row">
-              <span>当前会员积分</span>
-              <strong>{points}</strong>
-            </div>
-            <p>通用积分自发放起 90 天有效</p>
-          </div>
-        </div>
-      </div>
+      <MallMemberHero />
       {pendingCount > 0 ? (
         <button className="pending-banner" onClick={() => go({ name: 'claim' })}>
           您还有 {pendingAmount} 积分待领取
@@ -219,15 +238,30 @@ export function MallPage() {
       {homeLayout === 'zones' ? (
         <section className="mall-section">
           <div className="mall-section-head">
-            <h2>权益专区</h2>
+            <h2>积分权益专区</h2>
           </div>
-          <div className="product-grid">
-            {HOME_BENEFIT_PRODUCTS.map((item) => (
-              <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
-                <ProductCardBody product={item} />
-              </button>
-            ))}
-          </div>
+          <button className="zone-entry is-benefit" type="button" onClick={() => go({ name: 'benefit-zone' })}>
+            <div className="zone-entry-copy">
+              <span className="zone-entry-kicker">会员积分兑换</span>
+              <strong>积分权益专区</strong>
+              <span className="zone-entry-sub">通用金、支付宝券、微信立减金，用会员积分兑换</span>
+              <span className="zone-entry-go">进入 ›</span>
+            </div>
+            <div className="mall-banner-visual" aria-hidden="true">
+              <span className="mall-chip mall-chip-a">
+                <ProductIcon id="gold" />
+              </span>
+              <span className="mall-chip mall-chip-b">
+                <ProductIcon id="alipay" />
+              </span>
+              <span className="mall-chip mall-chip-c">
+                <ProductIcon id="wechat" />
+              </span>
+              <span className="mall-chip mall-chip-d">
+                <ProductIcon id="alipay-plus" />
+              </span>
+            </div>
+          </button>
         </section>
       ) : null}
 
@@ -237,7 +271,7 @@ export function MallPage() {
             <h2>积分专区</h2>
           </div>
         ) : null}
-        {homeLayout === 'flat' ? (
+        {homeLayout !== 'zones' ? (
           <PointsZoneShelf variant="home" />
         ) : (
           <button className="zone-entry" type="button" onClick={() => go({ name: 'points-zone' })}>
@@ -268,6 +302,74 @@ export function MallPage() {
   )
 }
 
+function yuan3(n: number) {
+  return n.toFixed(3)
+}
+
+export function LaborExtractPage() {
+  const [picked, setPicked] = useState<string | null>(null)
+  const record = LABOR_EXTRACT.records.find((item) => item.id === picked)
+
+  return (
+    <div className="page labor-page">
+      <MallMemberHero variant="withdraw" />
+      <section className="extract-block">
+        <h3>提取到收款账户</h3>
+        <div className="extract-account">
+          <div className="extract-account-left">
+            <span className="extract-alipay">
+              <ProductIcon id="alipay" />
+            </span>
+            <span>{LABOR_EXTRACT.accountMask}</span>
+          </div>
+          <span className="extract-switch">切换收款账号 ›</span>
+        </div>
+      </section>
+      <h3 className="extract-list-head">请选择要提取的充值记录</h3>
+      <p className="extract-tip">{LABOR_EXTRACT.tip}</p>
+      {LABOR_EXTRACT.records.map((item) => (
+        <div key={item.id} className="extract-card">
+          <div className="extract-card-top">
+            <div>
+              <div className="extract-amount">¥{yuan3(item.amount)}</div>
+              <div className="extract-name">{item.name}</div>
+            </div>
+            <button type="button" className="extract-now" onClick={() => setPicked(item.id)}>
+              立即提取
+            </button>
+          </div>
+          <div className="extract-meta">
+            <div>预计到账金额 {yuan3(item.expected)}</div>
+            <div>商家设定服务费率 {yuan3(item.feeRate)}%</div>
+            <div>{LABOR_EXTRACT.feeNote}</div>
+          </div>
+        </div>
+      ))}
+      {record ? (
+        <div className="modal-mask" onClick={() => setPicked(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h3>确认提取</h3>
+            <p className="modal-name">{record.name}</p>
+            <div className="modal-amount">
+              <span className="modal-pay-label">预计到账</span>
+              <em>{yuan3(record.expected)}</em> 元
+            </div>
+            <p className="modal-sub">
+              提取 {yuan3(record.amount)} 元，服务费率 {yuan3(record.feeRate)}%
+            </p>
+            <button className="btn-primary" type="button" onClick={() => setPicked(null)}>
+              确认提取
+            </button>
+            <button className="btn-text" type="button" onClick={() => setPicked(null)}>
+              取消
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function PointsZonePage() {
   const { go } = useStore()
 
@@ -276,6 +378,28 @@ export function PointsZonePage() {
       <StatusBar />
       <NavBar title="积分专区" onBack={() => go({ name: 'mall' })} />
       <PointsZoneShelf variant="page" />
+    </div>
+  )
+}
+
+export function BenefitZonePage() {
+  const { go } = useStore()
+
+  return (
+    <div className="page mall-page">
+      <StatusBar />
+      <NavBar title="积分权益专区" onBack={() => go({ name: 'mall' })} />
+      <div className="product-grid">
+        {HOME_BENEFIT_PRODUCTS.map((item) => (
+          <button
+            key={item.id}
+            className="product-card"
+            onClick={() => go({ name: 'detail', productId: item.id, from: 'benefit-zone' })}
+          >
+            <ProductCardBody product={item} />
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -335,7 +459,7 @@ export function DetailPage({
 }: {
   productId: string
   channel?: BenefitChannel
-  from?: 'points-zone'
+  from?: ZoneFrom
 }) {
   const {
     go,
@@ -374,11 +498,13 @@ export function DetailPage({
   const latestBenefitOrder = orders.find((item) => item.productId === product.id && (item.received ?? 0) > 0)
   const benefitFinished = product.zone === 'benefit' && quotaLeft <= 0 && Boolean(latestBenefitOrder)
   const backScreen =
-    from === 'points-zone' && homeLayout === 'zones'
-      ? { name: 'points-zone' as const }
-      : channel
-        ? { name: 'benefit-channel' as const, channel }
-        : { name: 'mall' as const }
+    from === 'benefit-zone' && homeLayout === 'zones'
+      ? { name: 'benefit-zone' as const }
+      : from === 'points-zone' && homeLayout === 'zones'
+        ? { name: 'points-zone' as const }
+        : channel
+          ? { name: 'benefit-channel' as const, channel }
+          : { name: 'mall' as const }
 
   return (
     <div className="page detail-page">
@@ -609,15 +735,23 @@ function Row({
   )
 }
 
-export function SuccessPage({ orderId, from }: { orderId: string; from?: 'points-zone' }) {
+function zoneReturnLabel(from?: ZoneFrom, screenName?: string) {
+  if (from === 'benefit-zone' || screenName === 'benefit-zone') return '返回积分权益专区'
+  if (from === 'points-zone' || screenName === 'points-zone') return '返回积分专区'
+  return '返回商城'
+}
+
+export function SuccessPage({ orderId, from }: { orderId: string; from?: ZoneFrom }) {
   const { go, orders, productById, homeLayout } = useStore()
   const order = orders.find((item) => item.id === orderId)
   if (!order) return null
   const product = productById(order.productId)
   const listScreen =
-    (from === 'points-zone' || product?.zone === 'points') && homeLayout === 'zones'
-      ? { name: 'points-zone' as const }
-      : { name: 'mall' as const }
+    from === 'benefit-zone' && homeLayout === 'zones'
+      ? { name: 'benefit-zone' as const }
+      : (from === 'points-zone' || product?.zone === 'points') && homeLayout === 'zones'
+        ? { name: 'points-zone' as const }
+        : { name: 'mall' as const }
 
   return (
     <div className="page success-page">
@@ -685,12 +819,12 @@ export function SuccessPage({ orderId, from }: { orderId: string; from?: 'points
               点击跳转
             </button>
             <button className="btn-text" onClick={() => go(listScreen)}>
-              {from === 'points-zone' ? '返回积分专区' : '返回商城'}
+              {zoneReturnLabel(from, listScreen.name)}
             </button>
           </>
         ) : (
           <button className="btn-primary" onClick={() => go(listScreen)}>
-            {listScreen.name === 'points-zone' ? '返回积分专区' : '返回商城'}
+            {zoneReturnLabel(from, listScreen.name)}
           </button>
         )}
       </div>
