@@ -1,5 +1,7 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
+import { adjustStock, catalogProduct } from './catalog'
+import { pointsExpireDate } from './points-expiry'
 import type { CouponHold, Grant, HomeLayout, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
 export const CONSUMER_KEY = 'points-mall-demo-v7'
@@ -484,4 +486,130 @@ export function useStore() {
   const store = useContext(StoreContext)
   if (!store) throw new Error('Store missing')
   return store
+}
+
+export function peekConsumer() {
+  return loadState()
+}
+
+export function writeConsumer(next: Persisted) {
+  sessionStorage.setItem(CONSUMER_KEY, JSON.stringify(next))
+  window.dispatchEvent(new Event('points-mall-sync'))
+}
+
+export function adjustConsumerPoints(delta: number, title: string) {
+  const data = loadState()
+  const nextPoints = Math.max(0, round2(data.points + delta))
+  const actual = round2(nextPoints - data.points)
+  if (actual === 0) return nextPoints
+  writeConsumer({
+    ...data,
+    points: nextPoints,
+    ledger: [
+      { id: `L${Date.now()}`, type: actual > 0 ? 'claim' : 'redeem', title, amount: actual, time: formatTime() },
+      ...data.ledger,
+    ],
+  })
+  return nextPoints
+}
+
+export function creditIssuedRows(
+  rows: {
+    id: string
+    points: number
+    kind: 'general' | 'dedicated'
+    title?: string
+    productId?: string
+    productName?: string
+    userFeeRate?: number
+    expireDate?: string
+  }[],
+) {
+  if (rows.length === 0) return
+  const data = loadState()
+  const quotas = { ...data.quotas }
+  let points = data.points
+  let userFeeRate = data.userFeeRate
+  const extraGrants: Grant[] = []
+  const extraLedger: LedgerEntry[] = []
+  const now = formatTime()
+  for (const row of rows) {
+    const title = row.title ?? (row.kind === 'general' ? '通用积分发放' : `${row.productName ?? '专用券'}发放`)
+    extraGrants.push({
+      id: `mg-${row.id}`,
+      title,
+      amount: row.points,
+      claimed: true,
+      kind: row.kind,
+      productId: row.productId,
+      userFeeRate: row.userFeeRate,
+      expireDate: row.expireDate ?? pointsExpireDate(),
+    })
+    extraLedger.push({
+      id: `L${row.id}`,
+      type: 'claim',
+      title,
+      amount: row.points,
+      time: now,
+    })
+    points += row.points
+    userFeeRate = Math.max(userFeeRate, row.userFeeRate ?? 0)
+    if (row.kind === 'dedicated' && row.productId) {
+      const product = catalogProduct(row.productId)
+      const unit = product?.cost ?? 1
+      quotas[row.productId] = (quotas[row.productId] ?? 0) + Math.max(0, Math.floor(row.points / unit))
+    }
+  }
+  writeConsumer({
+    ...data,
+    points,
+    quotas,
+    userFeeRate,
+    grants: [...extraGrants, ...data.grants],
+    ledger: [...extraLedger, ...data.ledger],
+    hasEverClaimed: true,
+  })
+}
+
+function restoreCoupon(coupons: CouponHold[], order: Order) {
+  const paid = order.couponPaid ?? 0
+  if (paid <= 0) return coupons
+  const found = coupons.find((item) => item.name === order.payLabel)
+  if (found) {
+    return coupons.map((item) =>
+      item.name === order.payLabel ? { ...item, value: round2(item.value + paid) } : item,
+    )
+  }
+  return [...coupons, { productId: 'alipay', name: order.payLabel ?? '抵扣券', value: paid }]
+}
+
+export function refundConsumerOrder(orderId: string) {
+  const data = loadState()
+  const order = data.orders.find((item) => item.id === orderId)
+  if (!order || order.status === 'refunded') return false
+  const product = catalogProduct(order.productId)
+  if (product?.zone === 'benefit') return false
+  const pointsBack = order.pointsPaid ?? (order.payWith === 'gold' || order.payWith === 'coupon' ? 0 : order.cost)
+  const goldBack = order.goldPaid ?? 0
+  const couponBack = order.couponPaid ?? 0
+  const credit = pointsBack || goldBack || couponBack
+  writeConsumer({
+    ...data,
+    points: round2(data.points + pointsBack),
+    goldBalance: round2(data.goldBalance + goldBack),
+    coupons: restoreCoupon(data.coupons, order),
+    orders: data.orders.map((item) => (item.id === orderId ? { ...item, status: 'refunded' } : item)),
+    ledger: [
+      {
+        id: `L${Date.now()}`,
+        type: 'claim',
+        title: `退款${order.productName}`,
+        amount: credit,
+        time: formatTime(),
+      },
+      ...data.ledger,
+    ],
+  })
+  adjustStock(order.productId, 1)
+  return true
 }

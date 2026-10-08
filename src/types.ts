@@ -35,6 +35,8 @@ export type Product = {
   benefitStatus?: BenefitStatus
   quota?: number
   ended?: boolean
+  stock?: number
+  onShelf?: boolean
 }
 
 export type Grant = {
@@ -42,6 +44,7 @@ export type Grant = {
   title: string
   amount: number
   claimed: boolean
+  expireDate?: string
   kind?: 'general' | 'dedicated'
   productId?: string
   userFeeRate?: number
@@ -80,7 +83,7 @@ export type Order = {
   cost: number
   time: string
   expireDate: string
-  status: 'completed'
+  status: 'completed' | 'refunded'
   payWith?: PayMethod
   payLabel?: string
   goldPaid?: number
