@@ -1,16 +1,21 @@
+import { useMemo, useState } from 'react'
 import { AdminProvider, useAdmin } from './store'
 import { ApprovalBuyPage, ApprovalListPage, ApprovalPayPage } from './approval'
+import { DatacenterPage } from './datacenter'
 import { MembersPage } from './members'
 import { RedeemsPage } from './redemptions'
+import type { AdminScreen } from './model'
 import './admin.css'
+
+type NavScreen = Extract<AdminScreen, 'members' | 'redeems' | 'approval' | 'datacenter'>
 
 type NavItem = {
   id: string
   label: string
   icon: string
-  screen?: 'members' | 'redeems' | 'approval'
+  screen?: NavScreen
   muted?: boolean
-  children?: { id: string; label: string; screen?: 'members' | 'redeems' | 'approval'; muted?: boolean }[]
+  children?: { id: string; label: string; screen?: NavScreen; muted?: boolean }[]
 }
 
 const NAV: NavItem[] = [
@@ -39,7 +44,12 @@ const NAV: NavItem[] = [
     ],
   },
   { id: 'orders', label: '订单管理', icon: 'orders', muted: true },
-  { id: 'data', label: '数据中心', icon: 'data', muted: true },
+  {
+    id: 'data',
+    label: '数据中心',
+    icon: 'data',
+    children: [{ id: 'detail', label: '明细数据', screen: 'datacenter' }],
+  },
   { id: 'user', label: '用户中心', icon: 'user', muted: true },
   { id: 'upload', label: '上传下载中心', icon: 'upload', muted: true },
   { id: 'system', label: '系统管理', icon: 'system', muted: true },
@@ -52,6 +62,7 @@ function isApprovalScreen(screen: string) {
 function currentNavId(screen: string) {
   if (screen === 'members') return 'members'
   if (screen === 'redeems') return 'redeems'
+  if (screen === 'datacenter') return 'detail'
   if (isApprovalScreen(screen)) return 'approval'
   return 'approval'
 }
@@ -83,9 +94,23 @@ function NavIcon({ name }: { name: string }) {
   return <svg {...common}><circle cx="8" cy="8" r="5.2" /><path d="M8 7.4v3.4M8 5.2h.01" /></svg>
 }
 
+function Caret({ open }: { open: boolean }) {
+  return (
+    <svg className={open ? 'side-caret is-open' : 'side-caret'} width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+      <path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function Shell() {
   const { screen, go } = useAdmin()
   const active = currentNavId(screen)
+  const [opened, setOpened] = useState<string[]>(['audit'])
+  const openSet = useMemo(() => new Set(opened), [opened])
+
+  const toggle = (id: string) => {
+    setOpened((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+  }
 
   return (
     <div className="admin-root">
@@ -114,21 +139,26 @@ function Shell() {
         <aside className="admin-side">
           {NAV.map((item) => {
             const childOn = item.children?.some((child) => child.id === active)
+            const open = Boolean(item.children && (openSet.has(item.id) || childOn))
             return (
-              <div key={item.id} className="side-block">
+              <div key={item.id} className={open ? 'side-block is-open' : 'side-block'}>
                 <button
                   className={item.id === active ? 'side-item on' : item.muted && !childOn ? 'side-item muted' : 'side-item'}
                   type="button"
                   onClick={() => {
-                    const first = item.children?.find((child) => child.screen)
-                    if (first?.screen) go(first.screen)
+                    if (item.children) {
+                      toggle(item.id)
+                      return
+                    }
+                    if (item.screen) go(item.screen)
                   }}
                 >
                   <NavIcon name={item.icon} />
                   <span>{item.label}</span>
+                  {item.children ? <Caret open={open} /> : null}
                 </button>
-                {item.children
-                  ? item.children.map((child) => (
+                {open
+                  ? item.children?.map((child) => (
                       <button
                         key={child.id}
                         className={child.id === active ? 'side-sub on' : child.muted ? 'side-sub muted' : 'side-sub'}
@@ -145,12 +175,14 @@ function Shell() {
             )
           })}
         </aside>
-        <main className="admin-main">
+        <main className={screen === 'datacenter' ? 'admin-main is-canvas' : 'admin-main'}>
           {screen === 'members' ? <MembersPage /> : null}
           {screen === 'redeems' ? <RedeemsPage /> : null}
+          {screen === 'datacenter' ? <DatacenterPage /> : null}
           {screen === 'approval-buy' ? <ApprovalBuyPage /> : null}
           {screen === 'approval-pay' ? <ApprovalPayPage /> : null}
-          {screen === 'approval' || (!isApprovalScreen(screen) && screen !== 'members' && screen !== 'redeems') ? (
+          {screen === 'approval' ||
+          (!isApprovalScreen(screen) && screen !== 'members' && screen !== 'redeems' && screen !== 'datacenter') ? (
             <ApprovalListPage />
           ) : null}
         </main>
