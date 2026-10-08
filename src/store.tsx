@@ -372,7 +372,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...data.ledger,
         ],
       })
-      setScreen({ name: 'success', orderId: order.id })
+      setScreen({
+        name: 'success',
+        orderId: order.id,
+        from: screen.name === 'detail' ? screen.from : undefined,
+      })
       return order
     }
 
@@ -418,7 +422,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ...data.ledger,
       ],
     })
-    setScreen({ name: 'success', orderId: order.id })
+    setScreen({
+      name: 'success',
+      orderId: order.id,
+      from: screen.name === 'detail' ? screen.from : undefined,
+    })
     return order
   }
 

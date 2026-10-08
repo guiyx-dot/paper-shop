@@ -17,8 +17,8 @@ function Screen() {
   const { screen, hasEverClaimed } = useStore()
   if (!hasEverClaimed) return <ClaimPage />
   if (screen.name === 'claim') return <ClaimPage />
-  if (screen.name === 'detail') return <DetailPage productId={screen.productId} channel={screen.channel} />
-  if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} />
+  if (screen.name === 'detail') return <DetailPage productId={screen.productId} channel={screen.channel} from={screen.from} />
+  if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} from={screen.from} />
   if (screen.name === 'corp-pay') return <CorpPayPage fromOrderId={screen.fromOrderId} />
   if (screen.name === 'benefit-channel') return <BenefitChannelPage channel={screen.channel} />
   if (screen.name === 'points-zone') return <PointsZonePage />

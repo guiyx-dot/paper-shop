@@ -1,5 +1,5 @@
 export type Zone = 'benefit' | 'points'
-export type Category = 'dining' | 'life' | 'travel'
+export type Category = 'dining' | 'life' | 'travel' | 'more'
 export type BenefitStatus = 'available' | 'locked' | 'ended'
 export type Tab = 'mall' | 'mine'
 
@@ -10,8 +10,8 @@ export type Screen =
   | { name: 'mall' }
   | { name: 'points-zone' }
   | { name: 'benefit-channel'; channel: BenefitChannel }
-  | { name: 'detail'; productId: string; channel?: BenefitChannel }
-  | { name: 'success'; orderId: string }
+  | { name: 'detail'; productId: string; channel?: BenefitChannel; from?: 'points-zone' }
+  | { name: 'success'; orderId: string; from?: 'points-zone' }
   | { name: 'corp-pay'; fromOrderId?: string }
   | { name: 'mine' }
   | { name: 'records' }

@@ -213,11 +213,16 @@ export function benefitsInChannel(channel: BenefitChannel) {
 
 export const CORP_PAY_ID = 'corp-pay'
 
-export const CATEGORIES: { id: 'all' | 'dining' | 'life' | 'travel'; label: string }[] = [
+export const BENEFIT_PRODUCTS = PRODUCTS.filter((item) => item.zone === 'benefit')
+
+export const HOME_BENEFIT_PRODUCTS = BENEFIT_PRODUCTS.filter((item) => item.id !== CORP_PAY_ID)
+
+export const CATEGORIES: { id: 'all' | 'dining' | 'life' | 'travel' | 'more'; label: string }[] = [
   { id: 'all', label: '全部' },
   { id: 'dining', label: '餐饮' },
   { id: 'life', label: '生活' },
   { id: 'travel', label: '出行' },
+  { id: 'more', label: '更多' },
 ]
 
 export const PRODUCT_TONES: Record<string, [string, string]> = {

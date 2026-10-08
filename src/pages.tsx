@@ -1,4 +1,4 @@
-import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, benefitsInChannel, CORP_PAY_ID } from './data'
+import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID } from './data'
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
 import { useStore } from './store'
@@ -124,32 +124,6 @@ export function ClaimPage() {
   )
 }
 
-function ChannelBoards() {
-  const { go } = useStore()
-  return (
-    <div className="channel-stack">
-      {BENEFIT_CHANNELS.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={`channel-board is-${item.id}`}
-          onClick={() => go({ name: 'benefit-channel', channel: item.id })}
-        >
-          <div className="channel-board-copy">
-            <span>权益专区</span>
-            <strong>{item.name}</strong>
-            <em>{item.sub}</em>
-            <b>进入 ›</b>
-          </div>
-          <div className="channel-board-mark">
-            <ProductIcon id={item.id} />
-          </div>
-        </button>
-      ))}
-    </div>
-  )
-}
-
 export function MallPage() {
   const { points, go, pendingAmount, pendingCount } = useStore()
 
@@ -190,7 +164,13 @@ export function MallPage() {
         <div className="mall-section-head">
           <h2>权益专区</h2>
         </div>
-        <ChannelBoards />
+        <div className="product-grid">
+          {HOME_BENEFIT_PRODUCTS.map((item) => (
+            <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
+              <ProductCardBody product={item} />
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="mall-section">
@@ -226,8 +206,9 @@ export function MallPage() {
 
 export function PointsZonePage() {
   const { go, generalPoints, goldBalance, couponTotal } = useStore()
-  const [category, setCategory] = useState<'all' | 'dining' | 'life' | 'travel'>('all')
-  const pointsList = PRODUCTS.filter((item) => {
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]['id']>('all')
+  const list = PRODUCTS.filter((item) => {
+    if (category === 'more') return item.zone === 'benefit'
     if (item.zone !== 'points') return false
     if (category !== 'all' && item.category !== category) return false
     return true
@@ -246,22 +227,19 @@ export function PointsZonePage() {
         <p className="mall-balance-expire">{zonePayHint(generalPoints, goldBalance, couponTotal)}</p>
       </div>
       <div className="cat-row">
-        {(
-          [
-            ['all', '全部'],
-            ['dining', '餐饮'],
-            ['life', '生活'],
-            ['travel', '出行'],
-          ] as const
-        ).map(([id, label]) => (
-          <button key={id} className={category === id ? 'cat on' : 'cat'} onClick={() => setCategory(id)}>
-            {label}
+        {CATEGORIES.map((item) => (
+          <button key={item.id} className={category === item.id ? 'cat on' : 'cat'} onClick={() => setCategory(item.id)}>
+            {item.label}
           </button>
         ))}
       </div>
       <div className="product-grid is-zone">
-        {pointsList.map((item) => (
-          <button key={item.id} className="product-card" onClick={() => go({ name: 'detail', productId: item.id })}>
+        {list.map((item) => (
+          <button
+            key={item.id}
+            className="product-card"
+            onClick={() => go({ name: 'detail', productId: item.id, from: 'points-zone' })}
+          >
             <ProductCardBody product={item} />
           </button>
         ))}
@@ -318,7 +296,15 @@ function ProductCardBody({ product }: { product: Product }) {
   )
 }
 
-export function DetailPage({ productId, channel }: { productId: string; channel?: BenefitChannel }) {
+export function DetailPage({
+  productId,
+  channel,
+  from,
+}: {
+  productId: string
+  channel?: BenefitChannel
+  from?: 'points-zone'
+}) {
   const {
     go,
     points,
@@ -354,11 +340,13 @@ export function DetailPage({ productId, channel }: { productId: string; channel?
   const payUnit = payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'
   const latestBenefitOrder = orders.find((item) => item.productId === product.id && (item.received ?? 0) > 0)
   const benefitFinished = product.zone === 'benefit' && quotaLeft <= 0 && Boolean(latestBenefitOrder)
-  const backScreen = channel
-    ? { name: 'benefit-channel' as const, channel }
-    : product.zone === 'points'
-      ? { name: 'points-zone' as const }
-      : { name: 'mall' as const }
+  const backScreen = from === 'points-zone'
+    ? { name: 'points-zone' as const }
+    : channel
+      ? { name: 'benefit-channel' as const, channel }
+      : product.zone === 'points'
+        ? { name: 'points-zone' as const }
+        : { name: 'mall' as const }
 
   return (
     <div className="page detail-page">
@@ -589,18 +577,19 @@ function Row({
   )
 }
 
-export function SuccessPage({ orderId }: { orderId: string }) {
+export function SuccessPage({ orderId, from }: { orderId: string; from?: 'points-zone' }) {
   const { go, orders, productById } = useStore()
   const order = orders.find((item) => item.id === orderId)
   if (!order) return null
   const product = productById(order.productId)
+  const listScreen = from === 'points-zone' || product?.zone === 'points' ? { name: 'points-zone' as const } : { name: 'mall' as const }
 
   return (
     <div className="page success-page">
       <StatusBar />
       <NavBar
         title="兑换详情"
-        onBack={() => go(product?.zone === 'points' ? { name: 'points-zone' } : { name: 'mall' })}
+        onBack={() => go(listScreen)}
         right={
           <button className="nav-text" onClick={() => go({ name: 'records' })}>
             记录
@@ -660,16 +649,13 @@ export function SuccessPage({ orderId }: { orderId: string }) {
             <button className="btn-primary" type="button" onClick={() => go({ name: 'corp-pay', fromOrderId: order.id })}>
               点击跳转
             </button>
-            <button className="btn-text" onClick={() => go({ name: 'mall' })}>
-              返回商城
+            <button className="btn-text" onClick={() => go(listScreen)}>
+              {from === 'points-zone' ? '返回积分专区' : '返回商城'}
             </button>
           </>
         ) : (
-          <button
-            className="btn-primary"
-            onClick={() => go(product?.zone === 'points' ? { name: 'points-zone' } : { name: 'mall' })}
-          >
-            {product?.zone === 'points' ? '返回积分专区' : '返回商城'}
+          <button className="btn-primary" onClick={() => go(listScreen)}>
+            {listScreen.name === 'points-zone' ? '返回积分专区' : '返回商城'}
           </button>
         )}
       </div>

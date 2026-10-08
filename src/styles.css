@@ -948,9 +948,16 @@ button {
   display: flex;
   gap: 8px;
   padding: 0 16px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cat-row::-webkit-scrollbar {
+  display: none;
 }
 
 .cat {
+  flex: none;
   height: 30px;
   padding: 0 14px;
   border-radius: 16px;
