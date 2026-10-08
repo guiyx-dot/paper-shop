@@ -1,10 +1,15 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
-import type { CouponHold, Grant, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
+import type { CouponHold, Grant, HomeLayout, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
 export const CONSUMER_KEY = 'points-mall-demo-v7'
+export const HOME_LAYOUT_KEY = 'points-mall-home-layout'
 export const GOLD_PRODUCT_ID = 'gold'
 export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
+
+function loadHomeLayout(): HomeLayout {
+  return sessionStorage.getItem(HOME_LAYOUT_KEY) === 'flat' ? 'flat' : 'zones'
+}
 
 type Persisted = {
   grants: Grant[]
@@ -226,10 +231,12 @@ type Unavailable = { label: string; hint: string } | null
 
 type Store = Persisted & {
   screen: Screen
+  homeLayout: HomeLayout
   pendingAmount: number
   pendingCount: number
   generalPoints: number
   go: (screen: Screen) => void
+  setHomeLayout: (layout: HomeLayout) => void
   claimPending: () => void
   redeem: (productId: string, payWith?: PayMethod, couponProductId?: string) => Order | null
   reset: () => void
@@ -245,6 +252,7 @@ const StoreContext = createContext<Store | null>(null)
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Persisted>(loadState)
   const [screen, setScreen] = useState<Screen>(loadState().hasEverClaimed ? { name: 'mall' } : { name: 'claim' })
+  const [homeLayout, setHomeLayoutState] = useState<HomeLayout>(loadHomeLayout)
 
   useEffect(() => {
     const sync = () => setData(loadState())
@@ -268,6 +276,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return
     }
     setScreen(next)
+  }
+
+  const setHomeLayout = (layout: HomeLayout) => {
+    sessionStorage.setItem(HOME_LAYOUT_KEY, layout)
+    setHomeLayoutState(layout)
+    if (layout === 'flat' && screen.name === 'points-zone') setScreen({ name: 'mall' })
   }
 
   const claimPending = () => {
@@ -439,10 +453,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       ...data,
       screen,
+      homeLayout,
       pendingAmount,
       pendingCount,
       generalPoints,
       go,
+      setHomeLayout,
       claimPending,
       redeem,
       reset,
@@ -453,7 +469,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         makePayQuote(data.goldBalance, data.coupons, generalPoints, product, payWith, couponProductId),
       couponTotal: sumCoupons(data.coupons),
     }),
-    [data, screen, pendingAmount, pendingCount, generalPoints],
+    [data, screen, homeLayout, pendingAmount, pendingCount, generalPoints],
   )
 
   return createElement(StoreContext.Provider, { value }, children)

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
 import { BenefitChannelPage, ClaimPage, CorpPayPage, DetailPage, MallPage, MinePage, PointsZonePage, RecordsPage, SuccessPage, TabBar } from './pages'
 import AdminApp from './admin/AdminApp'
+import type { HomeLayout } from './types'
 
 function useAdminHash() {
   const [admin, setAdmin] = useState(() => window.location.hash.startsWith('#/admin'))
@@ -40,19 +41,45 @@ function PhoneShell() {
   )
 }
 
+const LAYOUTS: { id: HomeLayout; label: string }[] = [
+  { id: 'zones', label: '双专区' },
+  { id: 'flat', label: '积分平铺' },
+]
+
+function StageChrome() {
+  const { homeLayout, setHomeLayout } = useStore()
+  return (
+    <div className="stage-tools">
+      <a className="admin-entry" href="#/admin">
+        商户后台
+      </a>
+      <div className="layout-switch" role="group" aria-label="首页情况">
+        {LAYOUTS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={homeLayout === item.id ? 'on' : ''}
+            onClick={() => setHomeLayout(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const admin = useAdminHash()
   if (admin) return <AdminApp />
   return (
     <div className="stage">
-      <a className="admin-entry" href="#/admin">
-        商户后台
-      </a>
-      <div className="phone">
-        <StoreProvider>
+      <StoreProvider>
+        <StageChrome />
+        <div className="phone">
           <PhoneShell />
-        </StoreProvider>
-      </div>
+        </div>
+      </StoreProvider>
     </div>
   )
 }

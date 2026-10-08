@@ -4,6 +4,7 @@ export type BenefitStatus = 'available' | 'locked' | 'ended'
 export type Tab = 'mall' | 'mine'
 
 export type BenefitChannel = 'alipay' | 'wechat'
+export type HomeLayout = 'zones' | 'flat'
 
 export type Screen =
   | { name: 'claim' }
