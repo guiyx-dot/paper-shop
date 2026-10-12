@@ -170,17 +170,16 @@ export function buildApprovalUsers(count = 128): ImportRow[] {
 
 export const APPROVAL_USERS = buildApprovalUsers(128)
 
-export type SceneL1 = 'new-car' | 'used-car' | 'accident' | 'points'
+export type SceneL1 = 'new-car' | 'used-car' | 'accident' | 'member' | 'points'
 export type SceneL2 =
   | 'new-sale'
   | 'new-commission'
-  | 'new-member'
   | 'used-sale'
   | 'used-commission'
-  | 'used-member'
   | 'acc-commission'
   | 'acc-repair'
   | 'acc-member'
+  | 'member-only'
   | 'points-issue'
   | 'points-redeem'
 
@@ -191,7 +190,6 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
     children: [
       { id: 'new-sale', label: '新车销售' },
       { id: 'new-commission', label: '新车佣金' },
-      { id: 'new-member', label: '会员营销' },
     ],
   },
   {
@@ -200,7 +198,6 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
     children: [
       { id: 'used-sale', label: '二手车销售' },
       { id: 'used-commission', label: '二手车佣金' },
-      { id: 'used-member', label: '会员营销' },
     ],
   },
   {
@@ -211,6 +208,11 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
       { id: 'acc-repair', label: '维修佣金' },
       { id: 'acc-member', label: '会员营销佣金' },
     ],
+  },
+  {
+    id: 'member',
+    label: '会员营销',
+    children: [{ id: 'member-only', label: '会员营销' }],
   },
   {
     id: 'points',
@@ -376,8 +378,8 @@ export const APPROVAL_RECORDS: ApprovalRecord[] = [
   }),
   rec({
     id: 'ar4',
-    l1: 'new-car',
-    l2: 'new-member',
+    l1: 'member',
+    l2: 'member-only',
     batchNo: '2047623564261707775',
     approvalNo: '010162320095',
     chainName: '产研验证商户演示会员营销提报',
@@ -421,8 +423,8 @@ export const APPROVAL_RECORDS: ApprovalRecord[] = [
   }),
   rec({
     id: 'ar7',
-    l1: 'used-car',
-    l2: 'used-member',
+    l1: 'member',
+    l2: 'member-only',
     batchNo: '2068945828076064812',
     approvalNo: '010162320119',
     chainName: '产研验证商户演示二手车会员营销',
