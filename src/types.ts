@@ -7,6 +7,7 @@ export type BenefitChannel = 'alipay' | 'wechat'
 export type HomeLayout = 'zones' | 'flat' | 'labor'
 
 export type ZoneFrom = 'points-zone' | 'benefit-zone'
+export type RightsTab = 'cards' | 'packs'
 
 export type Screen =
   | { name: 'claim' }
@@ -17,6 +18,9 @@ export type Screen =
   | { name: 'detail'; productId: string; channel?: BenefitChannel; from?: ZoneFrom }
   | { name: 'success'; orderId: string; from?: ZoneFrom }
   | { name: 'corp-pay'; fromOrderId?: string }
+  | { name: 'gold-wallet'; fromOrderId?: string }
+  | { name: 'my-benefits'; fromOrderId?: string; tab?: RightsTab }
+  | { name: 'gift-pack'; packId?: string; fromOrderId?: string }
   | { name: 'mine' }
   | { name: 'records' }
 
@@ -64,6 +68,22 @@ export type CouponHold = {
   productId: string
   name: string
   value: number
+}
+
+export type GiftPackItem = {
+  id: string
+  brand: string
+  brandName: string
+  name: string
+  sub: string
+}
+
+export type GiftPackHold = {
+  id: string
+  productId: string
+  name: string
+  items: GiftPackItem[]
+  orderId: string
 }
 
 export type PayQuote = {

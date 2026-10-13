@@ -1,8 +1,8 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { FOLLOW_UP_GRANT, INITIAL_GRANTS, PRODUCTS } from './data'
+import { FOLLOW_UP_GRANT, GIFT_PACK_ID, INITIAL_GRANTS, PRODUCTS, giftPackItemsForRedeem } from './data'
 import { adjustStock, catalogProduct } from './catalog'
 import { pointsExpireDate } from './points-expiry'
-import type { CouponHold, Grant, HomeLayout, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
+import type { CouponHold, GiftPackHold, Grant, HomeLayout, LedgerEntry, Order, PayMethod, PayQuote, Product, Screen } from './types'
 
 export const CONSUMER_KEY = 'points-mall-demo-v7'
 export const HOME_LAYOUT_KEY = 'points-mall-home-layout'
@@ -25,6 +25,7 @@ type Persisted = {
   followUpIssued: boolean
   goldBalance: number
   coupons: CouponHold[]
+  giftPacks: GiftPackHold[]
   userFeeRate: number
 }
 
@@ -77,6 +78,7 @@ function emptyState(): Persisted {
     followUpIssued: false,
     goldBalance: 0,
     coupons: [],
+    giftPacks: [],
     userFeeRate: 0,
   }
 }
@@ -91,6 +93,10 @@ export function isGoldBenefit(id: string) {
 
 export function isCouponBenefit(id: string) {
   return (COUPON_PRODUCT_IDS as readonly string[]).includes(id)
+}
+
+export function isGiftPackBenefit(id: string) {
+  return id === GIFT_PACK_ID
 }
 
 function sumCoupons(coupons: CouponHold[]) {
@@ -206,9 +212,13 @@ function loadState(): Persisted {
       },
       goldBalance: parsed.goldBalance ?? 0,
       coupons: Array.isArray(parsed.coupons) ? parsed.coupons : [],
+      giftPacks: Array.isArray(parsed.giftPacks) ? parsed.giftPacks : [],
     }
     if (next.hasEverClaimed && parsed.quotas?.['corp-pay'] == null) {
       next.quotas['corp-pay'] = PRODUCTS.find((item) => item.id === 'corp-pay')?.quota ?? 500
+    }
+    if (next.hasEverClaimed && parsed.quotas?.[GIFT_PACK_ID] == null) {
+      next.quotas[GIFT_PACK_ID] = PRODUCTS.find((item) => item.id === GIFT_PACK_ID)?.quota ?? 1
     }
     const legacy = parsed.voucherValue ?? 0
     if (legacy > 0 && next.goldBalance === 0 && next.coupons.length === 0) {
@@ -361,7 +371,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const qty = data.quotas[product.id] ?? 0
       const pointsCost = qty * product.cost
       const now = new Date()
-      const received = round2(pointsCost * (1 - data.userFeeRate))
+      const packRedeem = isGiftPackBenefit(product.id)
+      const received = packRedeem ? 0 : round2(pointsCost * (1 - data.userFeeRate))
       const wallet = creditWallet(data, product, received)
       const order: Order = {
         id: `ORD${now.getTime().toString().slice(-10)}`,
@@ -376,9 +387,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         pointsPaid: pointsCost,
         received,
       }
+      const giftPacks = packRedeem
+        ? [
+            {
+              id: `GP${now.getTime().toString().slice(-10)}`,
+              productId: product.id,
+              name: product.name,
+              items: giftPackItemsForRedeem(),
+              orderId: order.id,
+            },
+            ...data.giftPacks,
+          ]
+        : data.giftPacks
       persist({
         ...data,
         ...wallet,
+        giftPacks,
         points: data.points - pointsCost,
         quotas: { ...data.quotas, [product.id]: 0 },
         orders: [order, ...data.orders],

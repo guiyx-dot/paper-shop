@@ -1,4 +1,4 @@
-import type { BenefitChannel, Grant, Product } from './types'
+import type { BenefitChannel, GiftPackItem, Grant, Product } from './types'
 
 export const USER = {
   name: '桂*徽',
@@ -74,6 +74,19 @@ export const PRODUCTS: Product[] = [
     channels: ['wechat'],
     description: '兑换后将发放至微信卡包，可在支持的商户中抵扣使用。',
     usage: '本商品按发放额度一次兑完剩余份数。兑换后不支持退回积分。',
+  },
+  {
+    id: 'gift-pack',
+    name: '万佳乐权益大礼包',
+    subtitle: '固定 100 积分兑换，每次礼包内容不同',
+    zone: 'benefit',
+    cost: 100,
+    validityDays: 90,
+    stockLabel: '充足',
+    benefitStatus: 'available',
+    quota: 1,
+    description: '一次兑换整份礼包。演示本次放入京东、饿了么、高德、美团共 5 项权益。',
+    usage: '礼包面额固定 100 积分，每人限兑 1 份。兑换后不支持退回积分。',
   },
   {
     id: 'corp-pay',
@@ -212,6 +225,19 @@ export function benefitsInChannel(channel: BenefitChannel) {
 }
 
 export const CORP_PAY_ID = 'corp-pay'
+export const GIFT_PACK_ID = 'gift-pack'
+
+export const DEMO_GIFT_PACK_ITEMS: GiftPackItem[] = [
+  { id: 'jd-100', brand: 'jd', brandName: '京东', name: '京东权益100元', sub: '购物卡券权益' },
+  { id: 'jd-50', brand: 'jd', brandName: '京东', name: '京东权益50元', sub: '购物卡券权益' },
+  { id: 'eleme-116', brand: 'eleme', brandName: '饿了么', name: '饿了么116元券包', sub: '满减组合券' },
+  { id: 'amap-50', brand: 'amap', brandName: '高德', name: '高德打车50元组合券包', sub: '新老用户打车权益' },
+  { id: 'mt-30', brand: 'meituan', brandName: '美团', name: '美团外卖神券30元', sub: '外卖红包权益' },
+]
+
+export function giftPackItemsForRedeem() {
+  return DEMO_GIFT_PACK_ITEMS.map((item) => ({ ...item }))
+}
 
 export const BENEFIT_PRODUCTS = PRODUCTS.filter((item) => item.zone === 'benefit')
 
@@ -242,6 +268,7 @@ export const PRODUCT_TONES: Record<string, [string, string]> = {
   alipay: ['#5AB0FF', '#1677FF'],
   'alipay-plus': ['#7EC8FF', '#0A5CFF'],
   wechat: ['#62E08F', '#07C160'],
+  'gift-pack': ['#B8E6CF', '#2F8F6D'],
   'corp-pay': ['#FFB347', '#FF6A00'],
   starbucks: ['#4FB37A', '#006241'],
   takeout: ['#FFE566', '#FFD100'],

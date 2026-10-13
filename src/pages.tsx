@@ -1,9 +1,9 @@
-import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID, LABOR_EXTRACT } from './data'
+import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID, GIFT_PACK_ID, DEMO_GIFT_PACK_ITEMS, LABOR_EXTRACT } from './data'
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
-import { useStore } from './store'
-import { useState, type CSSProperties } from 'react'
-import type { BenefitChannel, PayMethod, Product, ZoneFrom } from './types'
+import { GOLD_PRODUCT_ID, useStore } from './store'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import type { BenefitChannel, GiftPackItem, PayMethod, Product, RightsTab, Screen, ZoneFrom } from './types'
 
 function money(n: number) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2)
@@ -244,7 +244,7 @@ export function MallPage() {
             <div className="zone-entry-copy">
               <span className="zone-entry-kicker">会员积分兑换</span>
               <strong>积分权益专区</strong>
-              <span className="zone-entry-sub">通用金、支付宝券、微信立减金，用会员积分兑换</span>
+              <span className="zone-entry-sub">通用金、支付宝券、微信立减金、权益礼包，用会员积分兑换</span>
               <span className="zone-entry-go">进入 ›</span>
             </div>
             <div className="mall-banner-visual" aria-hidden="true">
@@ -258,7 +258,7 @@ export function MallPage() {
                 <ProductIcon id="wechat" />
               </span>
               <span className="mall-chip mall-chip-d">
-                <ProductIcon id="alipay-plus" />
+                <ProductIcon id="gift-pack" />
               </span>
             </div>
           </button>
@@ -429,6 +429,72 @@ export function BenefitChannelPage({ channel }: { channel: BenefitChannel }) {
   )
 }
 
+function isGiftPack(id?: string) {
+  return id === GIFT_PACK_ID
+}
+
+function openBenefitAsset(go: (screen: Screen) => void, productId: string, fromOrderId?: string) {
+  if (productId === CORP_PAY_ID) go({ name: 'corp-pay', fromOrderId })
+  else if (productId === GOLD_PRODUCT_ID) go({ name: 'gold-wallet', fromOrderId })
+  else if (isGiftPack(productId)) go({ name: 'my-benefits', fromOrderId, tab: 'packs' })
+  else go({ name: 'my-benefits', fromOrderId, tab: 'cards' })
+}
+
+function benefitCtaLabel(productId: string) {
+  if (productId === CORP_PAY_ID) return '点击跳转'
+  if (isGiftPack(productId)) return '查看权益'
+  return '去使用'
+}
+
+function PackPerkList({ items }: { items: GiftPackItem[] }) {
+  return (
+    <div className="pack-perk-list">
+      {items.map((item) => (
+        <div key={item.id} className="pack-perk">
+          <div className="pack-perk-brand">{item.brandName}</div>
+          <div className="pack-perk-split" />
+          <div className="pack-perk-copy">
+            <b>{item.name}</b>
+            <span>{item.sub}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WxChrome({
+  title,
+  onBack,
+  children,
+  className,
+}: {
+  title: string
+  onBack: () => void
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={`page wx-page${className ? ` ${className}` : ''}`}>
+      <StatusBar />
+      <div className="wx-nav">
+        <button type="button" className="wx-back" onClick={onBack} aria-label="返回">
+          ‹
+        </button>
+        <h1>{title}</h1>
+        <div className="wx-capsule" aria-hidden="true">
+          <span>☆</span>
+          <i />
+          <span>⋯</span>
+          <i />
+          <span>○</span>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 function ProductCardBody({ product }: { product: Product }) {
   const { unavailable, remainingQuota } = useStore()
   const reason = unavailable(product)
@@ -495,8 +561,9 @@ export function DetailPage({
   const afterPoints = (product.zone === 'points' ? generalPoints : points) - (product.zone === 'benefit' ? batchCost : quote.pointsPaid)
   const selectedCouponId = couponId ?? couponQuote.couponProductId
   const payUnit = payWith === 'gold' ? '通用金' : payWith === 'coupon' ? couponQuote.label : '积分'
-  const latestBenefitOrder = orders.find((item) => item.productId === product.id && (item.received ?? 0) > 0)
+  const latestBenefitOrder = orders.find((item) => item.productId === product.id)
   const benefitFinished = product.zone === 'benefit' && quotaLeft <= 0 && Boolean(latestBenefitOrder)
+  const giftPack = isGiftPack(product.id)
   const backScreen =
     from === 'benefit-zone' && homeLayout === 'zones'
       ? { name: 'benefit-zone' as const }
@@ -510,6 +577,7 @@ export function DetailPage({
     <div className="page detail-page">
       <StatusBar />
       <NavBar title="商品详情" onBack={() => go(backScreen)} />
+      <div className="detail-scroll">
       <div className="hero-block">
         <ProductIcon id={product.id} />
         <h2>{product.name}</h2>
@@ -539,11 +607,13 @@ export function DetailPage({
           <Row
             label="兑后用途"
             value={
-              product.id === 'gold'
-                ? '入通用金余额，可兑积分专区'
-                : product.id === CORP_PAY_ID
-                  ? '跳转因公付（企业权益）使用'
-                  : '入抵扣券，可兑积分专区'
+              giftPack
+                ? '权益放入「我的礼包」，可查看礼包内容'
+                : product.id === 'gold'
+                  ? '入通用金余额，可兑积分专区'
+                  : product.id === CORP_PAY_ID
+                    ? '跳转因公付（企业权益）使用'
+                    : '入抵扣券，可兑积分专区'
             }
           />
         ) : null}
@@ -570,6 +640,12 @@ export function DetailPage({
         <Row label="有效期" value={`兑换后 ${product.validityDays} 天`} />
         <Row label="库存" value={product.stockLabel} />
       </div>
+      {giftPack ? (
+        <div className="desc-card pack-preview">
+          <h3>本次礼包内容</h3>
+          <PackPerkList items={DEMO_GIFT_PACK_ITEMS} />
+        </div>
+      ) : null}
       <div className="desc-card">
         <h3>权益说明</h3>
         <p>{product.description}</p>
@@ -577,16 +653,19 @@ export function DetailPage({
           {reason
             ? reason.hint
             : product.zone === 'benefit'
-              ? product.id === CORP_PAY_ID
-                ? `${product.usage} 兑成后点击跳转至因公付（企业权益）。`
-                : `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
+              ? giftPack
+                ? `${product.usage} 兑成后点「查看权益」进入我的礼包。`
+                : product.id === CORP_PAY_ID
+                  ? `${product.usage} 兑成后点击跳转至因公付（企业权益）。`
+                  : `${product.usage} 兑成${product.id === 'gold' ? '通用金余额' : '抵扣券'}后，可在积分专区选择对应方式支付。`
               : '支付时竖向选择积分、通用金或抵扣券，一次只用一种。余额不够请先兑权益专区，或改用其他方式。'}
         </p>
       </div>
+      </div>
       <div className="bottom-cta">
-        {benefitFinished && product.id === CORP_PAY_ID ? (
-          <button className="btn-primary" type="button" onClick={() => go({ name: 'corp-pay' })}>
-            点击跳转
+        {benefitFinished ? (
+          <button className="btn-primary" type="button" onClick={() => openBenefitAsset(go, product.id)}>
+            {benefitCtaLabel(product.id)}
           </button>
         ) : !canAny ? (
           <button className="btn-primary is-disabled" disabled>
@@ -687,13 +766,19 @@ export function DetailPage({
                 )}
               </div>
             ) : (
-              <p className="modal-sub">当前会员积分：{points}，一次兑完剩余 {quotaLeft} 份</p>
+              <p className="modal-sub">
+                {giftPack
+                  ? `当前会员积分：${points}，一次兑换整份礼包`
+                  : `当前会员积分：${points}，一次兑完剩余 ${quotaLeft} 份`}
+              </p>
             )}
             {product.zone === 'benefit' ? (
               <p className="modal-tip">
-                {product.id === CORP_PAY_ID
-                  ? `到账约 ${received} 元因公付额度，兑换后点击跳转使用`
-                  : `到账约 ${received} 元${product.name}${product.id === 'gold' ? '（计入通用金余额）' : '（计入抵扣券）'}，之后可在积分专区支付`}
+                {giftPack
+                  ? '兑换后权益放入「我的礼包」，可查看本次礼包内容'
+                  : product.id === CORP_PAY_ID
+                    ? `到账约 ${received} 元因公付额度，兑换后点击跳转使用`
+                    : `到账约 ${received} 元${product.name}${product.id === 'gold' ? '（计入通用金余额）' : '（计入抵扣券）'}，之后可在积分专区支付`}
               </p>
             ) : null}
             <button
@@ -747,10 +832,10 @@ export function SuccessPage({ orderId, from }: { orderId: string; from?: ZoneFro
   if (!order) return null
   const product = productById(order.productId)
   const listScreen =
-    from === 'benefit-zone' && homeLayout === 'zones'
-      ? { name: 'benefit-zone' as const }
-      : (from === 'points-zone' || product?.zone === 'points') && homeLayout === 'zones'
-        ? { name: 'points-zone' as const }
+    homeLayout === 'zones' && (from === 'points-zone' || product?.zone === 'points')
+      ? { name: 'points-zone' as const }
+      : homeLayout === 'zones' && (from === 'benefit-zone' || product?.zone === 'benefit')
+        ? { name: 'benefit-zone' as const }
         : { name: 'mall' as const }
 
   return (
@@ -775,7 +860,9 @@ export function SuccessPage({ orderId, from }: { orderId: string; from?: ZoneFro
               ? `已用${order.payLabel ?? '抵扣券'}抵扣 ${money(order.couponPaid ?? 0)}${(order.pointsPaid ?? 0) > 0 ? `，积分补 ${money(order.pointsPaid ?? 0)}` : ''}`
               : `${order.cost} 积分已扣除`}
         </p>
-        {order.received ? (
+        {isGiftPack(order.productId) ? (
+          <p>权益已放入「我的礼包」，可查看本次礼包内容</p>
+        ) : order.received ? (
           <p>
             {order.productId === CORP_PAY_ID
               ? `到账 ${order.received} 元因公付额度，点击跳转即可使用`
@@ -813,10 +900,14 @@ export function SuccessPage({ orderId, from }: { orderId: string; from?: ZoneFro
         <Row label="状态" value="已完成" success />
       </div>
       <div className="bottom-cta">
-        {order.productId === CORP_PAY_ID ? (
+        {product?.zone === 'benefit' ? (
           <>
-            <button className="btn-primary" type="button" onClick={() => go({ name: 'corp-pay', fromOrderId: order.id })}>
-              点击跳转
+            <button
+              className="btn-primary"
+              type="button"
+              onClick={() => openBenefitAsset(go, order.productId, order.id)}
+            >
+              {benefitCtaLabel(order.productId)}
             </button>
             <button className="btn-text" onClick={() => go(listScreen)}>
               {zoneReturnLabel(from, listScreen.name)}
@@ -829,6 +920,170 @@ export function SuccessPage({ orderId, from }: { orderId: string; from?: ZoneFro
         )}
       </div>
     </div>
+  )
+}
+
+export function GoldWalletPage({ fromOrderId }: { fromOrderId?: string }) {
+  const { go, goldBalance, orders } = useStore()
+  const rows = orders.filter((item) => item.productId === GOLD_PRODUCT_ID || item.payWith === 'gold')
+
+  return (
+    <div className="page gold-wallet-page">
+      <StatusBar />
+      <NavBar
+        title="通用金"
+        onBack={() => (fromOrderId ? go({ name: 'success', orderId: fromOrderId }) : go({ name: 'mall' }))}
+      />
+      <p className="gold-kicker">通用金 | 您的专属积分</p>
+      <div className="gold-card">
+        <div className="gold-card-top">
+          <span>可用额度</span>
+          <span className="gold-hint">提取说明</span>
+        </div>
+        <div className="gold-amount">{money(goldBalance)}</div>
+        <div className="gold-coin" aria-hidden>
+          <ProductIcon id="gold" />
+        </div>
+      </div>
+      <button className="gold-transfer" type="button">
+        <span className="gold-transfer-mark">¥</span>
+        转出
+      </button>
+      <div className="gold-ledger-head">
+        <h3>额度变动明细</h3>
+        <span>全部</span>
+      </div>
+      <div className="gold-ledger">
+        {rows.length === 0 ? (
+          <p className="empty">暂无明细</p>
+        ) : (
+          rows.map((item) => {
+            const inGold = item.productId === GOLD_PRODUCT_ID
+            const amount = inGold ? item.received ?? item.cost : -(item.goldPaid ?? 0)
+            return (
+              <div key={item.id} className="gold-ledger-row">
+                <div>
+                  <div className="ledger-title">{inGold ? '兑换入账' : `兑换${item.productName}`}</div>
+                  <div className="ledger-time">{item.time}</div>
+                </div>
+                <strong className={amount > 0 ? 'plus' : 'accent'}>
+                  {amount > 0 ? '+' : ''}
+                  {money(amount)}
+                </strong>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function RightsPage({ fromOrderId, tab: initialTab }: { fromOrderId?: string; tab?: RightsTab }) {
+  const { go, coupons, giftPacks } = useStore()
+  const [tab, setTab] = useState<RightsTab>(initialTab ?? 'cards')
+  const [filter, setFilter] = useState<'all' | 'unused' | 'charging' | 'used'>('unused')
+  const unused = coupons.filter((item) => item.value > 0)
+  const shown = filter === 'charging' || filter === 'used' ? [] : unused
+
+  return (
+    <WxChrome
+      title="我的权益"
+      className="rights-page"
+      onBack={() => (fromOrderId ? go({ name: 'success', orderId: fromOrderId }) : go({ name: 'mall' }))}
+    >
+      <div className="rights-tabs">
+        <button type="button" className={tab === 'cards' ? 'on' : ''} onClick={() => setTab('cards')}>
+          我的卡券
+        </button>
+        <button type="button" className={tab === 'packs' ? 'on' : ''} onClick={() => setTab('packs')}>
+          我的礼包
+        </button>
+      </div>
+      {tab === 'cards' ? (
+        <>
+          <div className="rights-filters">
+            {(
+              [
+                ['all', '全部'],
+                ['unused', '未使用'],
+                ['charging', '充值中'],
+                ['used', '已使用'],
+              ] as const
+            ).map(([id, label]) => (
+              <button key={id} type="button" className={filter === id ? 'on' : ''} onClick={() => setFilter(id)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="rights-list">
+            {shown.length === 0 ? (
+              <p className="empty">{filter === 'charging' ? '暂无充值中的卡券' : filter === 'used' ? '暂无已使用卡券' : '暂无卡券'}</p>
+            ) : (
+              shown.map((item) => (
+                <div key={item.productId} className="rights-group">
+                  <div className="rights-brand">
+                    <ProductIcon id={item.productId} />
+                    <span>{item.productId === 'wechat' ? '微信' : '支付宝'}</span>
+                  </div>
+                  <div className="rights-coupon">
+                    <div className="rights-value">
+                      <em>¥{money(item.value)}</em>
+                    </div>
+                    <div className="rights-copy">
+                      <div>{item.name}</div>
+                      <p>可在积分专区支付时全额抵扣</p>
+                      <p>兑换后 90 天内有效</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : giftPacks.length === 0 ? (
+        <p className="empty">暂无礼包</p>
+      ) : (
+        <div className="rights-packs">
+          {giftPacks.map((pack) => (
+            <button
+              key={pack.id}
+              className="gift-card"
+              type="button"
+              onClick={() => go({ name: 'gift-pack', packId: pack.id, fromOrderId })}
+            >
+              <div className="gift-top">
+                <span className="gift-badge">已领取</span>
+                <span className="gift-go">查看礼包 ›</span>
+              </div>
+              <h3>{pack.name}</h3>
+              <p className="gift-meta">含 {pack.items.length} 项权益</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </WxChrome>
+  )
+}
+
+export function GiftPackPage({ packId, fromOrderId }: { packId?: string; fromOrderId?: string }) {
+  const { go, giftPacks } = useStore()
+  const pack = giftPacks.find((item) => item.id === packId) ?? giftPacks[0]
+  if (!pack) return null
+
+  return (
+    <WxChrome
+      title="礼包详情"
+      className="gift-pack-page"
+      onBack={() => go({ name: 'my-benefits', fromOrderId, tab: 'packs' })}
+    >
+      <div className="pack-hero">
+        <span className="gift-badge">已领取</span>
+        <h3>{pack.name}</h3>
+        <p>全部权益已放入此礼包</p>
+      </div>
+      <PackPerkList items={pack.items} />
+    </WxChrome>
   )
 }
 

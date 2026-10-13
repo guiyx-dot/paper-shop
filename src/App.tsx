@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, SuccessPage, TabBar } from './pages'
+import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar } from './pages'
 import AdminApp from './admin/AdminApp'
 import type { HomeLayout } from './types'
 
@@ -21,6 +21,9 @@ function Screen() {
   if (screen.name === 'detail') return <DetailPage productId={screen.productId} channel={screen.channel} from={screen.from} />
   if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} from={screen.from} />
   if (screen.name === 'corp-pay') return <CorpPayPage fromOrderId={screen.fromOrderId} />
+  if (screen.name === 'gold-wallet') return <GoldWalletPage fromOrderId={screen.fromOrderId} />
+  if (screen.name === 'my-benefits') return <RightsPage fromOrderId={screen.fromOrderId} tab={screen.tab} />
+  if (screen.name === 'gift-pack') return <GiftPackPage packId={screen.packId} fromOrderId={screen.fromOrderId} />
   if (screen.name === 'benefit-channel') return <BenefitChannelPage channel={screen.channel} />
   if (screen.name === 'benefit-zone') return <BenefitZonePage />
   if (screen.name === 'points-zone') return <PointsZonePage />

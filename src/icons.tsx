@@ -35,6 +35,16 @@ export function ProductIcon({ id }: { id: string }) {
       )
     case 'wechat':
       return <BrandMark src={logo('wechat.svg')} bg="#07C160" />
+    case 'gift-pack':
+      return wrap(
+        'linear-gradient(145deg, #7ED9B0, #2F8F6D)',
+        <svg viewBox="0 0 48 48" className="icon-svg">
+          <rect x="12" y="22" width="24" height="16" rx="3" fill="none" stroke="#fff" strokeWidth="2.4" />
+          <rect x="10" y="18" width="28" height="7" rx="2.2" fill="none" stroke="#fff" strokeWidth="2.4" />
+          <path d="M24 18v20" stroke="#fff" strokeWidth="2.4" />
+          <path d="M24 18c-3-5-8-5.4-9.6 0 2.4 0 6 2.2 9.6 5.4 3.6-3.2 7.2-5.4 9.6-5.4-1.6-5.4-6.6-5-9.6 0Z" fill="#fff" />
+        </svg>,
+      )
     case 'corp-pay':
       return wrap(
         'linear-gradient(145deg, #FFB347, #FF6A00)',
