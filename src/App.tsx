@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar } from './pages'
+import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar, ZcbMemberPage } from './pages'
 import AdminApp from './admin/AdminApp'
 import type { HomeLayout } from './types'
 
@@ -46,8 +46,8 @@ function PhoneShell() {
 }
 
 const LAYOUTS: { id: HomeLayout; label: string }[] = [
-  { id: 'zones', label: '双专区' },
-  { id: 'flat', label: '积分平铺' },
+  { id: 'zones', label: '积分商城1期' },
+  { id: 'flat', label: '积分商城2期' },
   { id: 'labor', label: '连续劳务区分' },
 ]
 
@@ -87,32 +87,47 @@ function LaborExtractPhone() {
 
 function DemoStage() {
   const { homeLayout } = useStore()
-  if (homeLayout === 'labor') {
+  if (homeLayout === 'zones') {
     return (
       <div className="stage is-pair">
         <StageChrome />
         <div className="phone-pair">
           <div className="phone-wrap">
-            <div className="phone-caption">积分商城</div>
+            <div className="phone-caption">拾贝优选</div>
             <div className="phone">
               <PhoneShell />
             </div>
           </div>
           <div className="phone-wrap">
-            <div className="phone-caption">连续劳务</div>
+            <div className="phone-caption">支车宝</div>
             <div className="phone">
-              <LaborExtractPhone />
+              <div className="phone-body">
+                <ZcbMemberPage />
+              </div>
             </div>
           </div>
         </div>
       </div>
     )
   }
+  if (homeLayout === 'labor') {
+    return (
+      <div className="stage is-single">
+        <StageChrome />
+        <div className="phone">
+          <LaborExtractPhone />
+        </div>
+      </div>
+    )
+  }
   return (
-    <div className="stage">
+    <div className="stage is-single">
       <StageChrome />
-      <div className="phone">
-        <PhoneShell />
+      <div className="phone-wrap">
+        <div className="phone-caption">拾贝优选-自营商城</div>
+        <div className="phone">
+          <PhoneShell />
+        </div>
       </div>
     </div>
   )

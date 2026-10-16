@@ -295,10 +295,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setHomeLayout = (layout: HomeLayout) => {
     sessionStorage.setItem(HOME_LAYOUT_KEY, layout)
     setHomeLayoutState(layout)
-    if (layout !== 'zones' && (screen.name === 'points-zone' || screen.name === 'benefit-zone')) {
-      setScreen({ name: 'mall' })
-    }
-    if (layout === 'labor') setScreen({ name: 'mall' })
+    if (layout === 'labor' || screen.name === 'points-zone') setScreen({ name: 'mall' })
   }
 
   const claimPending = () => {

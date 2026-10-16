@@ -1,6 +1,7 @@
 import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS, CATEGORIES, benefitsInChannel, CORP_PAY_ID, GIFT_PACK_ID, DEMO_GIFT_PACK_ITEMS, LABOR_EXTRACT } from './data'
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
+import { FuduoHome } from './fuduo-home'
 import { GOLD_PRODUCT_ID, useStore } from './store'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import type { BenefitChannel, GiftPackItem, PayMethod, Product, RightsTab, Screen, ZoneFrom } from './types'
@@ -223,83 +224,8 @@ function MallMemberHero({ variant = 'points' }: { variant?: 'points' | 'withdraw
 }
 
 export function MallPage() {
-  const { go, pendingAmount, pendingCount, homeLayout } = useStore()
-
-  return (
-    <div className="page mall-page">
-      <MallMemberHero />
-      {pendingCount > 0 ? (
-        <button className="pending-banner" onClick={() => go({ name: 'claim' })}>
-          您还有 {pendingAmount} 积分待领取
-          <span>去领取</span>
-        </button>
-      ) : null}
-
-      {homeLayout === 'zones' ? (
-        <section className="mall-section">
-          <div className="mall-section-head">
-            <h2>积分权益专区</h2>
-          </div>
-          <button className="zone-entry is-benefit" type="button" onClick={() => go({ name: 'benefit-zone' })}>
-            <div className="zone-entry-copy">
-              <span className="zone-entry-kicker">会员积分兑换</span>
-              <strong>积分权益专区</strong>
-              <span className="zone-entry-sub">通用金、支付宝券、微信立减金、权益礼包，用会员积分兑换</span>
-              <span className="zone-entry-go">进入 ›</span>
-            </div>
-            <div className="mall-banner-visual" aria-hidden="true">
-              <span className="mall-chip mall-chip-a">
-                <ProductIcon id="gold" />
-              </span>
-              <span className="mall-chip mall-chip-b">
-                <ProductIcon id="alipay" />
-              </span>
-              <span className="mall-chip mall-chip-c">
-                <ProductIcon id="wechat" />
-              </span>
-              <span className="mall-chip mall-chip-d">
-                <ProductIcon id="gift-pack" />
-              </span>
-            </div>
-          </button>
-        </section>
-      ) : null}
-
-      <section className="mall-section">
-        {homeLayout === 'zones' ? (
-          <div className="mall-section-head">
-            <h2>积分专区</h2>
-          </div>
-        ) : null}
-        {homeLayout !== 'zones' ? (
-          <PointsZoneShelf variant="home" />
-        ) : (
-          <button className="zone-entry" type="button" onClick={() => go({ name: 'points-zone' })}>
-            <div className="zone-entry-copy">
-              <span className="zone-entry-kicker">福多多提供</span>
-              <strong>积分专区</strong>
-              <span className="zone-entry-sub">星巴克、外卖、出行等品牌好物，用通用积分、通用金或券兑换</span>
-              <span className="zone-entry-go">进入 ›</span>
-            </div>
-            <div className="mall-banner-visual" aria-hidden="true">
-              <span className="mall-chip mall-chip-a">
-                <ProductIcon id="starbucks" />
-              </span>
-              <span className="mall-chip mall-chip-b">
-                <ProductIcon id="takeout" />
-              </span>
-              <span className="mall-chip mall-chip-c">
-                <ProductIcon id="ride" />
-              </span>
-              <span className="mall-chip mall-chip-d">
-                <ProductIcon id="video" />
-              </span>
-            </div>
-          </button>
-        )}
-      </section>
-    </div>
-  )
+  const { homeLayout } = useStore()
+  return <FuduoHome allowH5={homeLayout === 'zones'} />
 }
 
 function yuan3(n: number) {
@@ -1248,6 +1174,78 @@ export function RecordsPage() {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+export function ZcbMemberPage() {
+  const [hide, setHide] = useState(false)
+  return (
+    <div className="page zcb-page">
+      <div className="zcb-hero">
+        <StatusBar />
+        <div className="zcb-nav">
+          <span className="zcb-back" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M15 5 8 12l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            会员服务
+          </span>
+          <span className="zcb-capsule" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+        <div className="zcb-card">
+          <div>
+            <h2>支车宝会员中心</h2>
+            <div className="member-user">
+              <span className="member-avatar">云</span>
+              <span>云曦</span>
+              <span className="member-info-pill">个人信息 ›</span>
+            </div>
+          </div>
+          <div className="member-gem" aria-hidden="true" />
+        </div>
+      </div>
+      <section className="zcb-perks">
+        <div className="zcb-head">
+          <h3>专属福利</h3>
+          <button type="button" onClick={() => setHide((value) => !value)}>
+            {hide ? '隐藏' : '显示'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </button>
+        </div>
+        <div className="zcb-grid">
+          <div className="zcb-gold">
+            <div className="zcb-gold-label">通用金</div>
+            <span className="zcb-coin" aria-hidden="true" />
+            <p>您的专属积分</p>
+            <strong>{hide ? '****' : '1.00'}</strong>
+            <span className="zcb-more">查看更多</span>
+          </div>
+          <div className="zcb-lite is-rights">
+            <div>我的权益</div>
+            <b>{hide ? '**' : '1项'}</b>
+            <span className="zcb-more">查看更多</span>
+          </div>
+          <div className="zcb-lite is-corp">
+            <div>因公付</div>
+            <b>{hide ? '****' : '¥0.00'}</b>
+            <span className="zcb-more">查看更多</span>
+          </div>
+        </div>
+      </section>
+      <button className="zcb-service" type="button" aria-label="客服">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4 13a8 8 0 0 1 16 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M4 13v4a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 2Zm16 0v4a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" fill="#fff" />
+        </svg>
+      </button>
     </div>
   )
 }
