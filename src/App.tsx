@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
 import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar, ZcbMemberPage } from './pages'
+import { ShopDetailPage, ShopPointsPage, ShopShelfPage } from './shop-pages'
 import AdminApp from './admin/AdminApp'
 import type { HomeLayout } from './types'
 
-function useAdminHash() {
-  const [admin, setAdmin] = useState(() => window.location.hash.startsWith('#/admin'))
+function useConsole() {
+  const read = () => {
+    if (window.location.hash.startsWith('#/mid')) return 'mid' as const
+    if (window.location.hash.startsWith('#/admin')) return 'admin' as const
+    return 'demo' as const
+  }
+  const [mode, setMode] = useState(read)
   useEffect(() => {
-    const onHash = () => setAdmin(window.location.hash.startsWith('#/admin'))
+    const onHash = () => setMode(read())
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
-  return admin
+  return mode
 }
 
 function Screen() {
@@ -29,6 +35,9 @@ function Screen() {
   if (screen.name === 'points-zone') return <PointsZonePage />
   if (screen.name === 'mine') return <MinePage />
   if (screen.name === 'records') return <RecordsPage />
+  if (screen.name === 'shop-shelf') return <ShopShelfPage shelfId={screen.shelf} />
+  if (screen.name === 'shop-detail') return <ShopDetailPage productId={screen.productId} from={screen.from} />
+  if (screen.name === 'shop-points') return <ShopPointsPage />
   return <MallPage />
 }
 
@@ -55,9 +64,14 @@ function StageChrome() {
   const { homeLayout, setHomeLayout } = useStore()
   return (
     <div className="stage-tools">
-      <a className="admin-entry" href="#/admin">
-        商户后台
-      </a>
+      <div className="stage-entries">
+        <a className="admin-entry" href="#/admin">
+          商户后台
+        </a>
+        <a className="admin-entry" href="#/mid">
+          数字中台
+        </a>
+      </div>
       <div className="layout-switch" role="group" aria-label="首页情况">
         {LAYOUTS.map((item) => (
           <button
@@ -134,8 +148,9 @@ function DemoStage() {
 }
 
 export default function App() {
-  const admin = useAdminHash()
-  if (admin) return <AdminApp />
+  const mode = useConsole()
+  if (mode === 'mid') return <AdminApp key="mid" place="mid" />
+  if (mode === 'admin') return <AdminApp key="merchant" />
   return (
     <StoreProvider>
       <DemoStage />

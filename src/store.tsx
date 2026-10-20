@@ -295,7 +295,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setHomeLayout = (layout: HomeLayout) => {
     sessionStorage.setItem(HOME_LAYOUT_KEY, layout)
     setHomeLayoutState(layout)
-    if (layout === 'labor' || screen.name === 'points-zone') setScreen({ name: 'mall' })
+    const shopScreen = screen.name === 'shop-shelf' || screen.name === 'shop-detail' || screen.name === 'shop-points'
+    if (layout === 'labor' || screen.name === 'points-zone' || (layout !== 'flat' && shopScreen)) {
+      setScreen({ name: 'mall' })
+    }
   }
 
   const claimPending = () => {

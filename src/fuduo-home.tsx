@@ -1,5 +1,7 @@
-import { useState, type MouseEvent, type ReactNode } from 'react'
+import { useMemo, useState, type MouseEvent, type ReactNode } from 'react'
+import { useMallConfig } from './shop-catalog'
 import { useStore } from './store'
+import type { Screen } from './types'
 
 const FUDUO = 'https://h5.fuduoka.com/fuduoduo/#/'
 
@@ -47,7 +49,6 @@ const icons: Record<string, ReactNode> = {
 
 const channels: { name: string; color: string; icon: ReactNode }[] = [
   ['京东优购', 'c1', 'bag'],
-  ['CEO星推荐', 'c2', 'star'],
   ['多多补贴', 'c3', 'tag'],
   ['多多优选', 'c4', 'bag'],
   ['视听会员', 'c5', 'play'],
@@ -58,43 +59,19 @@ const channels: { name: string; color: string; icon: ReactNode }[] = [
   ['更多频道', 'c10', 'more'],
 ].map(([name, color, icon]) => ({ name, color, icon: icons[icon] }))
 
-type Good = { promo?: boolean; name: string; desc?: string; price?: string; tags?: string[] }
-
-const covers = ['#fff1e6', '#eef4ff', '#eefaf3', '#fff1f6', '#f6f3ee', '#fff6ec']
-
-const goods: Record<string, Good[]> = {
-  hot: [
-    { promo: true, name: '一站省心购', desc: '提前比对商品，优选划算好物' },
-    { name: '【张太和】阿胶糕 60g*6盒', price: '178.18', tags: ['包邮', '省心购'] },
-    { name: '【倍轻松】眼部按摩器 EM002', price: '456.36', tags: ['包邮', '省心购'] },
-    { name: '【伟易达】汪汪队立大功救援套装', price: '198.99', tags: ['包邮', '省心购'] },
-  ],
-  grain: [
-    { name: '【乡村振兴】山真美椴木细木耳 200g', price: '54.99', tags: ['包邮', '省心购'] },
-    { name: '【刀唛】压榨花生油 5L', price: '169.89', tags: ['包邮', '省心购'] },
-    { name: '【神农唛】精选猴头菇 180g', price: '42', tags: ['包邮'] },
-    { name: '【神农唛】精选羊肚菌 100g', price: '218', tags: ['包邮'] },
-  ],
-  snack: [
-    { name: '【雅觅】原味晶沙酥 360g', price: '57.99', tags: ['包邮', '省心购'] },
-    { name: '【雅觅】元气蜂蜜枣糕 1000g', price: '59.79', tags: ['包邮', '省心购'] },
-    { name: '【雅觅】拔丝蛋糕 500g', price: '33.89', tags: ['包邮', '省心购'] },
-    { name: '【雅觅】蝴蝶酥 210g', price: '39.89', tags: ['包邮', '省心购'] },
-  ],
-  care: [
-    { name: '【碧浪】云感内衣洗衣液泡沫 200g', price: '29.49', tags: ['包邮', '省心购'] },
-    { name: '【蔬果园】幸福四叶草香氛洗衣凝珠', price: '58.89~119', tags: ['包邮', '省心购'] },
-    { name: '【茱莉蔻】玫瑰柔肤沐浴露 300ml', price: '219.99', tags: ['包邮', '省心购'] },
-    { name: '【大公鸡管家】厨房清洁剂', price: '37.27', tags: ['包邮', '省心购'] },
-  ],
+const channelShelf: Record<string, string> = {
+  京东优购: 'jd',
+  多多补贴: 'subsidy',
+  多多优选: 'select',
+  视听会员: 'video',
+  天猫优购: 'tmall',
+  网易严选: 'netease',
+  生日蛋糕: 'cake',
+  多多影视: 'film',
+  更多频道: 'more',
 }
 
-const tabs = [
-  { id: 'hot', title: '热门推荐', sub: '猜你喜欢' },
-  { id: 'grain', title: '健康粮油', sub: '营养均衡' },
-  { id: 'snack', title: '休闲零食', sub: '追剧必备' },
-  { id: 'care', title: '个护清洁', sub: '身体护理' },
-]
+const covers = ['#fff1e6', '#eef4ff', '#eefaf3', '#fff1f6', '#f6f3ee', '#fff6ec']
 
 function Mark({ color, children }: { color: string; children: ReactNode }) {
   return (
@@ -108,7 +85,28 @@ function Mark({ color, children }: { color: string; children: ReactNode }) {
 
 export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
   const { go } = useStore()
-  const [tab, setTab] = useState('hot')
+  const config = useMallConfig()
+  const categories = useMemo(
+    () => [...config.categories].sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'zh')),
+    [config.categories],
+  )
+  const [tab, setTab] = useState('')
+  const [bannerIndex, setBannerIndex] = useState(0)
+  const activeId = categories.some((item) => item.id === tab) ? tab : (categories[0]?.id ?? '')
+  const feed = config.goods.filter((item) => item.onShelf && item.categoryId === activeId)
+  const banners = useMemo(
+    () => config.banners.filter((item) => item.enabled && item.place !== 'careful').sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [config.banners],
+  )
+  const carefulBanner = useMemo(
+    () =>
+      config.banners
+        .filter((item) => item.enabled && item.place === 'careful')
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0],
+    [config.banners],
+  )
+  const bannerAt = banners.length ? bannerIndex % banners.length : 0
+  const banner = banners[bannerAt]
 
   const onPageClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
@@ -117,22 +115,52 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
     window.location.href = FUDUO
   }
 
+  const enter = (event: MouseEvent, next: Screen) => {
+    if (allowH5) return
+    event.stopPropagation()
+    go(next)
+  }
+
+  const openProduct = (event: MouseEvent, productId: string) => {
+    enter(event, { name: 'shop-detail', productId, from: 'mall' })
+  }
+
   return (
     <div className="page fd-home" onClick={onPageClick}>
       <div className="fd-wrap">
-        <button className="fd-hero" type="button">
+        <div
+          className={banner?.image ? 'fd-hero is-photo' : 'fd-hero'}
+          style={banner?.image ? { backgroundImage: `linear-gradient(90deg, rgba(28, 18, 8, 0.45), rgba(28, 18, 8, 0.05)), url(${banner.image})` } : undefined}
+          onClick={(event) => event.stopPropagation()}
+        >
           <div>
-            <h2>视听会员</h2>
-            <strong>5折起</strong>
+            <h2>{banner?.title || '视听会员'}</h2>
+            {banner ? banner.subtitle ? <strong>{banner.subtitle}</strong> : null : <strong>5折起</strong>}
           </div>
-          <div className="fd-hero-art" aria-hidden="true">
-            <span className="fd-blob" />
-            <span className="fd-blob tall" />
-            <span className="fd-blob" />
-          </div>
-        </button>
+          {banner?.image ? null : (
+            <div className="fd-hero-art" aria-hidden="true">
+              <span className="fd-blob" />
+              <span className="fd-blob tall" />
+              <span className="fd-blob" />
+            </div>
+          )}
+          {banners.length > 1 ? (
+            <span className="fd-hero-dots">
+              {banners.map((item, index) => (
+                <i
+                  key={item.id}
+                  className={index === bannerAt ? 'on' : ''}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setBannerIndex(index)
+                  }}
+                />
+              ))}
+            </span>
+          ) : null}
+        </div>
 
-        <div className="fd-points">
+        <div className="fd-points" onClick={(event) => enter(event, { name: 'shop-points' })}>
           <span>当前会员积分</span>
           <b>7500</b>
         </div>
@@ -140,7 +168,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
         <section className="fd-panel">
           <div className="fd-channels">
             {channels.map((item) => (
-              <button key={item.name} type="button">
+              <button key={item.name} type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: channelShelf[item.name] })}>
                 <Mark color={item.color}>{item.icon}</Mark>
                 <small>{item.name}</small>
               </button>
@@ -157,7 +185,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
         </button>
 
         <div className="fd-duo">
-          <button className="fd-sub" type="button">
+          <button className="fd-sub" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'video-sub' })}>
             <header>
               <h3>视听补贴</h3>
               <em>补贴50款+</em>
@@ -179,7 +207,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
               </div>
             </div>
           </button>
-          <button className="fd-sub" type="button">
+          <button className="fd-sub" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'cake-sub' })}>
             <header>
               <h3>蛋糕补贴</h3>
               <em>补贴100款+</em>
@@ -195,7 +223,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
           </button>
         </div>
 
-        <button className="fd-ceo" type="button">
+        <button className="fd-ceo" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'ceo' })}>
           <header>
             <h3>CEO星推荐</h3>
             <span>查看 ›</span>
@@ -213,7 +241,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
         </button>
 
         <div className="fd-picks">
-          <button className="fd-pick" type="button">
+          <button className="fd-pick" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'daily' })}>
             <h3>每日特价</h3>
             <div className="fd-mini">
               <span className="fd-ph sand" />
@@ -226,13 +254,13 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
             </div>
           </button>
           <div className="fd-stack">
-            <button className="fd-pick" type="button">
+            <button className="fd-pick" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'buyer' })}>
               <h3>
                 买手推荐 <span className="fd-tag">用心精选</span>
               </h3>
               <p className="fd-note">香肠 40点 · 座椅 880点</p>
             </button>
-            <button className="fd-pick" type="button">
+            <button className="fd-pick" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'fresh' })}>
               <h3>
                 新品首发 <span className="fd-tag">每日上新</span>
               </h3>
@@ -240,38 +268,48 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
             </button>
           </div>
         </div>
+
+        {carefulBanner ? (
+          <div
+            className={carefulBanner.image ? 'fd-promo is-bar is-photo' : 'fd-promo is-bar'}
+            style={
+              carefulBanner.image
+                ? { backgroundImage: `linear-gradient(90deg, rgba(28, 18, 8, 0.45), rgba(28, 18, 8, 0.05)), url(${carefulBanner.image})` }
+                : undefined
+            }
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div>
+              <h4>{carefulBanner.title}</h4>
+              {carefulBanner.subtitle ? <p>{carefulBanner.subtitle}</p> : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <nav className="fd-tabs">
-        {tabs.map((item) => (
-          <button key={item.id} type="button" className={tab === item.id ? 'on' : ''} onClick={() => setTab(item.id)}>
-            <span className="t">{item.title}</span>
-            <span className="s">{item.sub}</span>
+        {categories.map((item) => (
+          <button key={item.id} type="button" className={activeId === item.id ? 'on' : ''} onClick={() => setTab(item.id)}>
+            <span className="t">{item.name}</span>
           </button>
         ))}
       </nav>
       <div className="fd-grid">
-        {goods[tab].map((item, index) =>
-          item.promo ? (
-            <button key={item.name} className="fd-promo" type="button">
-              <h4>{item.name}</h4>
-              <p>{item.desc}</p>
-            </button>
-          ) : (
-            <button key={item.name} className="fd-card" type="button">
-              <div className="fd-cover" style={{ background: covers[index % covers.length] }}>
-                {item.name.replace(/【[^】]*】/g, '').trim().slice(0, 2)}
-              </div>
-              <h4>{item.name}</h4>
-              <div className="fd-pills">
-                {(item.tags ?? []).map((tag) => (
-                  <i key={tag}>{tag}</i>
-                ))}
-              </div>
-              <div className="fd-price">{item.price}点</div>
-            </button>
-          ),
-        )}
+        {feed.length === 0 ? <p className="fd-empty">这个类目还没有在售商品</p> : null}
+        {feed.map((item, index) => (
+          <button key={item.id} className="fd-card" type="button" onClick={(event) => openProduct(event, item.id)}>
+            <div className="fd-cover" style={{ background: item.tone || covers[index % covers.length] }}>
+              {item.image ? <img src={item.image} alt="" /> : item.name.replace(/【[^】]*】/g, '').trim().slice(0, 2)}
+            </div>
+            <h4>{item.name}</h4>
+            <div className="fd-pills">
+              {item.tags.map((tag) => (
+                <i key={tag}>{tag}</i>
+              ))}
+            </div>
+            <div className="fd-price">{item.price}点</div>
+          </button>
+        ))}
       </div>
     </div>
   )

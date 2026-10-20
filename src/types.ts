@@ -23,6 +23,9 @@ export type Screen =
   | { name: 'gift-pack'; packId?: string; fromOrderId?: string }
   | { name: 'mine' }
   | { name: 'records' }
+  | { name: 'shop-shelf'; shelf: string }
+  | { name: 'shop-detail'; productId: string; from?: string }
+  | { name: 'shop-points' }
 
 export type Product = {
   id: string

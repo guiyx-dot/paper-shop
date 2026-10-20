@@ -28,14 +28,14 @@ export function MembersPage({ startPhone }: { startPhone?: string } = {}) {
 
   if (current) {
     return (
-      <>
+      <div className="list-page">
         <div className="admin-crumb">
           <button type="button" onClick={() => setOpenPhone(null)}>
             积分商城 / 用户积分
           </button>
           <span> / {current.name}</span>
         </div>
-        <div className="admin-panel">
+        <div className="list-card member-card">
           <div className="member-detail-head">
             <div>
               <h2>{current.name}</h2>
@@ -58,7 +58,7 @@ export function MembersPage({ startPhone }: { startPhone?: string } = {}) {
           {current.grants.length === 0 ? (
             <p className="empty-panel">暂无发放</p>
           ) : (
-            <table className="admin-table">
+            <table className="admin-table list-table">
               <thead>
                 <tr>
                   <th>说明</th>
@@ -82,31 +82,33 @@ export function MembersPage({ startPhone }: { startPhone?: string } = {}) {
             </table>
           )}
         </div>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="list-page">
       <div className="admin-crumb">积分商城 / 用户积分</div>
-      <div className="admin-panel">
-        <h2 className="teal-title">用户积分</h2>
-        <p className="member-expire-note">通用积分自发放起 90 天有效。支付成功即入账。</p>
-        <div className="member-search">
+      <h2 className="list-title">用户积分</h2>
+      <p className="list-note">通用积分自发放起 90 天有效。支付成功即入账。</p>
+      <section className="list-card">
+        <div className="mall-filters">
           <input
             value={keyword}
             placeholder="搜索姓名或手机号"
             onChange={(event) => setKeyword(event.target.value)}
           />
-          <span>{shown.length} 人</span>
+          <span className="list-count">{shown.length} 人</span>
         </div>
-        <table className="admin-table">
+      </section>
+      <section className="list-card is-table">
+        <table className="admin-table list-table">
           <thead>
             <tr>
               <th>用户</th>
-              <th>通用积分</th>
-              <th>15 天内到期</th>
-              <th />
+              <th className="w-num">通用积分</th>
+              <th className="w-time">15 天内到期</th>
+              <th className="w-ops" />
             </tr>
           </thead>
           <tbody>
@@ -129,7 +131,7 @@ export function MembersPage({ startPhone }: { startPhone?: string } = {}) {
             ))}
           </tbody>
         </table>
-      </div>
-    </>
+      </section>
+    </div>
   )
 }

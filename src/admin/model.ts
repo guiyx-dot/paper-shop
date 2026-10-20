@@ -64,6 +64,10 @@ export type AdminScreen =
   | 'approval-buy'
   | 'approval-pay'
   | 'datacenter'
+  | 'mall-home'
+  | 'mall-banner'
+  | 'mall-goods'
+  | 'mall-category'
 
 export function money(n: number) {
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
