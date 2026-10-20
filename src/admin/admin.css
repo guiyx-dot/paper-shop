@@ -102,11 +102,21 @@
   font-size: 12px;
 }
 
+.admin-root.is-prd {
+  height: 100vh;
+  min-width: 1280px;
+  overflow: hidden;
+}
+
 .hive-body {
   flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: 184px 1fr;
+}
+
+.hive-body.is-prd {
+  grid-template-columns: 184px minmax(0, 1fr) auto;
 }
 
 .admin-side {
@@ -222,6 +232,7 @@
 .admin-main.is-mid {
   background: #f3f6fb;
   padding: 18px 20px 32px;
+  overflow: auto;
 }
 
 .admin-crumb {

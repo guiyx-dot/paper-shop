@@ -3,6 +3,7 @@ import { AdminProvider, useAdmin } from './store'
 import { ApprovalBuyPage, ApprovalListPage, ApprovalPayPage } from './approval'
 import { DatacenterPage } from './datacenter'
 import { MallBannerPage, MallCategoryPage, MallGoodsPage, MallHomePage } from './mall-config'
+import { Phase2Brief } from '../phase2-brief'
 import { MembersPage } from './members'
 import { RedeemsPage } from './redemptions'
 import type { AdminScreen } from './model'
@@ -141,7 +142,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
   }
 
   return (
-    <div className="admin-root">
+    <div className={place === 'mid' ? 'admin-root is-prd' : 'admin-root'}>
       <header className="hive-top">
         <div className="hive-brand">
           <strong>{place === 'mid' ? '数字中台' : '蜂巢云平台'}</strong>
@@ -163,7 +164,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
           <b>常念云</b>
         </div>
       </header>
-      <div className="hive-body">
+      <div className={place === 'mid' ? 'hive-body is-prd' : 'hive-body'}>
         <aside className="admin-side">
           {nav.map((item) => {
             const childOn = item.children?.some((child) => child.id === active)
@@ -225,6 +226,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
             <ApprovalListPage />
           ) : null}
         </main>
+        {place === 'mid' ? <Phase2Brief dock /> : null}
       </div>
     </div>
   )

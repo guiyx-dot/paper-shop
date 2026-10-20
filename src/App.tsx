@@ -3,6 +3,7 @@ import { StoreProvider, useStore } from './store'
 import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar, ZcbMemberPage } from './pages'
 import { ShopDetailPage, ShopPointsPage, ShopShelfPage } from './shop-pages'
 import AdminApp from './admin/AdminApp'
+import { Phase2Brief } from './phase2-brief'
 import type { HomeLayout } from './types'
 
 function useConsole() {
@@ -135,13 +136,16 @@ function DemoStage() {
     )
   }
   return (
-    <div className="stage is-single">
+    <div className="stage is-flat">
       <StageChrome />
-      <div className="phone-wrap">
-        <div className="phone-caption">拾贝优选-自营商城</div>
-        <div className="phone">
-          <PhoneShell />
+      <div className="flat-row">
+        <div className="phone-wrap">
+          <div className="phone-caption">拾贝优选-自营商城</div>
+          <div className="phone">
+            <PhoneShell />
+          </div>
         </div>
+        <Phase2Brief />
       </div>
     </div>
   )

@@ -144,8 +144,162 @@ button {
 }
 
 .stage.is-pair .phone,
-.stage.is-single .phone {
+.stage.is-single .phone,
+.stage.is-flat .phone {
   zoom: 0.78;
+}
+
+.stage.is-flat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 72px 24px 32px;
+}
+
+.flat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.phase2-brief {
+  width: 440px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  padding: 18px 22px 28px;
+  border-radius: 16px;
+  background: #fff;
+  color: #1d2129;
+  box-shadow: 0 16px 40px rgba(80, 60, 30, 0.08);
+}
+
+.phase2-brief.is-shut {
+  width: auto;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.phase2-brief.is-dock {
+  width: 400px;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  border-left: 1px solid #e8edf3;
+}
+
+.phase2-brief.is-dock.is-shut {
+  width: 44px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.phase2-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1d2129;
+}
+
+.phase2-brief.is-shut .phase2-toggle {
+  width: auto;
+  margin: 0;
+  padding: 14px 18px;
+  font-size: 14px;
+  gap: 10px;
+}
+
+.phase2-brief.is-dock.is-shut .phase2-toggle {
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 44px;
+  height: auto;
+  padding: 18px 0;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.phase2-brief.is-dock.is-shut .phase2-toggle span {
+  writing-mode: vertical-rl;
+  letter-spacing: 0.12em;
+}
+
+.phase2-toggle i {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1ac7c2;
+}
+
+.phase2-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #86909c;
+}
+
+.phase2-lead {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4e5969;
+}
+
+.phase2-brief h3 {
+  margin: 22px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.phase2-brief table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.phase2-brief th,
+.phase2-brief td {
+  padding: 8px 8px 8px 0;
+  border-bottom: 1px solid #f2f3f5;
+  vertical-align: top;
+  text-align: left;
+}
+
+.phase2-brief th {
+  color: #86909c;
+  font-weight: 500;
+}
+
+.phase2-brief td:first-child,
+.phase2-brief th:first-child {
+  width: 108px;
+  color: #1d2129;
+  font-weight: 600;
+}
+
+.phase2-brief th:first-child {
+  font-weight: 500;
+  color: #86909c;
+}
+
+.phase2-brief ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #1d2129;
+}
+
+.phase2-brief li + li {
+  margin-top: 6px;
 }
 
 .phone-caption {
