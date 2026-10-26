@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ProductIcon } from '../icons'
 import { catalogProduct } from '../catalog'
-import { formatTime, peekConsumer, refundConsumerOrder, adjustConsumerPoints } from '../store'
+import { peekConsumer } from '../store'
 import { DEMO_PHONE, maskPhone } from './model'
-import { creditGeneralPoints } from './member-data'
 
 export type RedeemStatus = 'completed' | 'refunded'
 
@@ -80,7 +79,7 @@ function fromConsumer(): RedeemOrder[] {
   })
 }
 
-function loadRedeems(): RedeemOrder[] {
+export function loadRedeems(): RedeemOrder[] {
   let stored: RedeemOrder[] = []
   try {
     const raw = sessionStorage.getItem(REDEEMS_KEY)
@@ -102,48 +101,8 @@ function loadRedeems(): RedeemOrder[] {
   return [...map.values()]
 }
 
-function saveRedeems(items: RedeemOrder[]) {
-  sessionStorage.setItem(REDEEMS_KEY, JSON.stringify(items))
-}
-
-export function listShopRedeems() {
-  return loadRedeems().filter((item) => item.source === 'shop')
-}
-
-export function appendShopRedeem(productName: string, cost: number) {
-  const order: RedeemOrder = {
-    id: `SP${Date.now().toString().slice(-8)}`,
-    phone: DEMO_PHONE,
-    name: '桂*徽',
-    productId: 'shop',
-    productName,
-    cost,
-    payLabel: '积分',
-    time: formatTime(),
-    status: 'completed',
-    source: 'shop',
-  }
-  saveRedeems([order, ...loadRedeems().filter((item) => item.id !== order.id)])
-  window.dispatchEvent(new Event('points-mall-sync'))
-}
-
-function applyRefund(order: RedeemOrder) {
-  if (order.status === 'refunded') return false
-  if (order.source === 'shop') return true
-  const demo = order.phone.replace(/\D/g, '') === DEMO_PHONE
-  if (demo) {
-    const exists = peekConsumer().orders.some((item) => item.id === order.id)
-    if (exists) refundConsumerOrder(order.id)
-    else adjustConsumerPoints(order.cost, `退款${order.productName}`)
-  } else {
-    creditGeneralPoints(order.phone, order.cost, `退款${order.productName}`)
-  }
-  return true
-}
-
 export function RedeemsPage() {
   const [items, setItems] = useState(loadRedeems)
-  const [pending, setPending] = useState<RedeemOrder | null>(null)
   const [view, setView] = useState<RedeemOrder | null>(null)
   const [form, setForm] = useState({ id: '', phone: '', product: '', status: '' })
   const [query, setQuery] = useState(form)
@@ -155,6 +114,7 @@ export function RedeemsPage() {
   }, [])
 
   const rows = items.filter((item) => {
+    if (item.source === 'shop') return false
     if (query.id && !item.id.includes(query.id.trim())) return false
     if (query.phone && !item.phone.includes(query.phone.trim()) && !item.name.includes(query.phone.trim())) return false
     if (query.product && !item.productName.includes(query.product.trim())) return false
@@ -162,22 +122,11 @@ export function RedeemsPage() {
     return true
   })
 
-  const confirmRefund = () => {
-    if (!pending) return
-    applyRefund(pending)
-    const next = loadRedeems().map((item) =>
-      item.id === pending.id ? { ...item, status: 'refunded' as const, refundedAt: formatTime() } : item,
-    )
-    saveRedeems(next)
-    setItems(next)
-    setPending(null)
-  }
-
   return (
     <div className="list-page">
       <div className="admin-crumb">积分商城 / 兑换订单</div>
       <h2 className="list-title">兑换订单</h2>
-      <p className="list-note">商品订单记在这里，含自营商品和权益商品。一笔订单只能整单退，不能退一部分；多笔订单可以分别退。</p>
+      <p className="list-note">福多多回传的兑换订单，这里看订单当下的状态。退货退款在福多多进行。自营商品在商城管理的商品订单。</p>
       <section className="list-card">
         <div className="mall-filters">
           <input value={form.id} placeholder="订单编号" onChange={(event) => setForm({ ...form, id: event.target.value })} />
@@ -236,7 +185,7 @@ export function RedeemsPage() {
                     <strong>{item.productName}</strong>
                   </div>
                 </td>
-                <td>{item.source === 'shop' ? '自营' : '权益'}</td>
+                <td>福多多</td>
                 <td>-{item.cost}</td>
                 <td>{item.payLabel}</td>
                 <td>{item.time}</td>
@@ -250,13 +199,6 @@ export function RedeemsPage() {
                     <button className="link" type="button" onClick={() => setView(item)}>
                       查看订单
                     </button>
-                    {item.status === 'completed' ? (
-                      <button className="link" type="button" onClick={() => setPending(item)}>
-                        退货退款
-                      </button>
-                    ) : (
-                      <span className="muted-line">{item.refundedAt ?? '已退回'}</span>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -291,7 +233,7 @@ export function RedeemsPage() {
               </div>
               <div>
                 <dt>订单类型</dt>
-                <dd>{view.source === 'shop' ? '自营商品' : '权益商品'}</dd>
+                <dd>福多多</dd>
               </div>
               <div>
                 <dt>支付方式</dt>
@@ -309,34 +251,16 @@ export function RedeemsPage() {
                 <dt>订单状态</dt>
                 <dd>{view.status === 'refunded' ? '已退款' : '已完成'}</dd>
               </div>
+              {view.status === 'refunded' ? (
+                <div>
+                  <dt>退款时间</dt>
+                  <dd>{view.refundedAt ?? '—'}</dd>
+                </div>
+              ) : null}
             </dl>
             <div className="refund-actions">
               <button className="admin-primary" type="button" onClick={() => setView(null)}>
                 关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {pending ? (
-        <div className="admin-mask" onClick={() => setPending(null)}>
-          <div className="admin-modal mall-dialog is-confirm" onClick={(event) => event.stopPropagation()}>
-            <div className="mall-dialog-head">
-              <h2>确认退货退款</h2>
-              <button type="button" onClick={() => setPending(null)} aria-label="关闭">
-                ×
-              </button>
-            </div>
-            <p className="modal-lead">
-              {pending.name} 兑换的「{pending.productName}」将退回 {pending.cost} 通用积分，订单标记为已退款。
-            </p>
-            <div className="refund-actions">
-              <button className="admin-ghost" type="button" onClick={() => setPending(null)}>
-                取消
-              </button>
-              <button className="admin-primary" type="button" onClick={confirmRefund}>
-                确认退款
               </button>
             </div>
           </div>

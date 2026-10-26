@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavBar, StatusBar } from './components'
-import { appendShopRedeem, listShopRedeems } from './admin/redemptions'
+import { appendShopOrder, listShopRedeems } from './admin/shop-orders'
 import { pointCost, useMallConfig, type ShopGood } from './shop-catalog'
 import { useStore } from './store'
 
@@ -104,9 +104,10 @@ export function ShopDetailPage({ productId, from }: { productId: string; from?: 
   }
 
   const cost = pointCost(product.price)
+  const categoryName = config.categories.find((item) => item.id === product.categoryId)?.name ?? ''
 
   const confirm = () => {
-    appendShopRedeem(product.name, cost)
+    appendShopOrder(product, categoryName)
     setAsk(false)
     setDone(true)
   }
@@ -131,7 +132,7 @@ export function ShopDetailPage({ productId, from }: { productId: string; from?: 
             <i key={tag}>{tag}</i>
           ))}
         </div>
-        <p className="shop-lead">使用会员积分兑换。提交后可在数字中台的兑换订单里查看。</p>
+        <p className="shop-lead">使用会员积分兑换。提交后可在数字中台的商品订单里查看。</p>
       </div>
       <div className="shop-buybar">
         <button className="shop-buy" type="button" onClick={() => setAsk(true)} disabled={!product.onShelf || done}>
@@ -187,7 +188,7 @@ export function ShopPointsPage() {
             <div>
               <h4>{item.productName}</h4>
               <p>
-                {item.time} · {item.status === 'refunded' ? '已退款' : '已完成'}
+                {item.time} · {item.status === 'refunded' ? '已退款' : item.status === 'pending' ? '待发货' : item.status === 'shipped' ? '已发货' : item.status === 'refunding' ? '退款中' : '已完成'}
               </p>
             </div>
             <span>-{item.cost}</span>

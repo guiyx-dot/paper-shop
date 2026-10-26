@@ -5,11 +5,16 @@ import { DatacenterPage } from './datacenter'
 import { MallBannerPage, MallCategoryPage, MallGoodsPage, MallHomePage } from './mall-config'
 import { Phase2Brief } from '../phase2-brief'
 import { MembersPage } from './members'
+import { PointFlowsPage } from './point-flows'
 import { RedeemsPage } from './redemptions'
+import { ShopOrdersPage } from './shop-orders'
 import type { AdminScreen } from './model'
 import './admin.css'
 
-type NavScreen = Extract<AdminScreen, 'members' | 'redeems' | 'approval' | 'datacenter' | 'mall-home' | 'mall-banner' | 'mall-goods' | 'mall-category'>
+type NavScreen = Extract<
+  AdminScreen,
+  'members' | 'redeems' | 'flows' | 'approval' | 'datacenter' | 'mall-home' | 'mall-banner' | 'mall-goods' | 'mall-category' | 'shop-orders'
+>
 
 type NavItem = {
   id: string
@@ -56,6 +61,7 @@ const MID_NAV: NavItem[] = [
     children: [
       { id: 'members', label: '用户积分', screen: 'members' },
       { id: 'redeems', label: '兑换订单', screen: 'redeems' },
+      { id: 'flows', label: '兑换流水', screen: 'flows' },
     ],
   },
   {
@@ -74,6 +80,7 @@ const MID_NAV: NavItem[] = [
     children: [
       { id: 'mall-goods', label: '商品管理', screen: 'mall-goods' },
       { id: 'mall-category', label: '类目管理', screen: 'mall-category' },
+      { id: 'shop-orders', label: '商品订单', screen: 'shop-orders' },
     ],
   },
 ]
@@ -85,6 +92,8 @@ function isApprovalScreen(screen: string) {
 function currentNavId(screen: string) {
   if (screen === 'members') return 'members'
   if (screen === 'redeems') return 'redeems'
+  if (screen === 'flows') return 'flows'
+  if (screen === 'shop-orders') return 'shop-orders'
   if (screen === 'mall-home') return 'mall-home'
   if (screen === 'mall-banner') return 'mall-banner'
   if (screen === 'mall-goods') return 'mall-goods'
@@ -211,6 +220,8 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
           {screen === 'mall-category' ? <MallCategoryPage /> : null}
           {screen === 'members' ? <MembersPage /> : null}
           {screen === 'redeems' ? <RedeemsPage /> : null}
+          {screen === 'flows' ? <PointFlowsPage /> : null}
+          {screen === 'shop-orders' ? <ShopOrdersPage /> : null}
           {screen === 'datacenter' ? <DatacenterPage /> : null}
           {screen === 'approval-buy' ? <ApprovalBuyPage /> : null}
           {screen === 'approval-pay' ? <ApprovalPayPage /> : null}
@@ -222,7 +233,9 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
             screen !== 'mall-home' &&
             screen !== 'mall-banner' &&
             screen !== 'mall-goods' &&
-            screen !== 'mall-category') ? (
+            screen !== 'mall-category' &&
+            screen !== 'flows' &&
+            screen !== 'shop-orders') ? (
             <ApprovalListPage />
           ) : null}
         </main>
