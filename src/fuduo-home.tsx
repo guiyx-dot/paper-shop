@@ -73,6 +73,18 @@ const channelShelf: Record<string, string> = {
 
 const covers = ['#fff1e6', '#eef4ff', '#eefaf3', '#fff1f6', '#f6f3ee', '#fff6ec']
 
+function homeImg(file: string) {
+  return `${import.meta.env.BASE_URL}goods/${file}`
+}
+
+function Thumb({ file, className }: { file: string; className: string }) {
+  return (
+    <span className={className}>
+      <img src={homeImg(file)} alt="" />
+    </span>
+  )
+}
+
 function Mark({ color, children }: { color: string; children: ReactNode }) {
   return (
     <span className={`fd-mark fd-${color}`}>
@@ -191,7 +203,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
               <em>补贴50款+</em>
             </header>
             <div className="fd-mini">
-              <span className="fd-ph green" />
+              <Thumb file="home-iqiyi.jpg" className="fd-ph" />
               <div>
                 <p>爱奇艺年卡</p>
                 <b>377.5点</b>
@@ -199,7 +211,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
               </div>
             </div>
             <div className="fd-mini">
-              <span className="fd-ph blue" />
+              <Thumb file="home-tencent.jpg" className="fd-ph" />
               <div>
                 <p>腾讯视频年卡</p>
                 <b>379点</b>
@@ -213,7 +225,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
               <em>补贴100款+</em>
             </header>
             <div className="fd-mini">
-              <span className="fd-ph pink" />
+              <Thumb file="home-birthday.jpg" className="fd-ph" />
               <div>
                 <p>生日蛋糕</p>
                 <b>234.1点</b>
@@ -229,7 +241,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
             <span>查看 ›</span>
           </header>
           <div className="fd-ceo-row">
-            <span className="fd-apple" aria-hidden="true" />
+            <Thumb file="home-apple.jpg" className="fd-apple" />
             <div>
               <h4>大凉山盐源丑苹果</h4>
               <p>4.5斤（70-75mm）</p>
@@ -244,7 +256,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
           <button className="fd-pick" type="button" onClick={(event) => enter(event, { name: 'shop-shelf', shelf: 'daily' })}>
             <h3>每日特价</h3>
             <div className="fd-mini">
-              <span className="fd-ph sand" />
+              <Thumb file="home-scrub.jpg" className="fd-ph" />
               <div>
                 <p>安野屋磨砂膏</p>
                 <b>

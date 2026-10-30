@@ -124,8 +124,13 @@ function SearchIcon() {
 
 function statusTone(text: string) {
   if (text.includes('成功') || text.includes('通过')) return 'ok'
-  if (text.includes('待') || text.includes('审核')) return 'wait'
+  if (text.includes('驳回') || text.includes('拒绝')) return 'bad'
+  if (text.includes('待') || text.includes('审核') || text.includes('审批中')) return 'wait'
   return 'bad'
+}
+
+function canPlaceOrder(status: string) {
+  return status === '审批通过'
 }
 
 export function ApprovalListPage() {
@@ -138,6 +143,7 @@ export function ApprovalListPage() {
   const [name, setName] = useState('')
   const [picker, setPicker] = useState(false)
   const [pickKind, setPickKind] = useState<PurchaseKind>('dedicated')
+  const [blockTip, setBlockTip] = useState('')
 
   const scene = SCENE_TREE.find((item) => item.id === l1) ?? SCENE_TREE[0]
 
@@ -157,9 +163,10 @@ export function ApprovalListPage() {
     })
   }, [l1, l2, batchNo, phone, name])
 
-  const selectedRows = rows.filter((item) => selectedIds.includes(item.id))
+  const orderableRows = rows.filter((item) => canPlaceOrder(item.approvalStatus))
+  const selectedRows = orderableRows.filter((item) => selectedIds.includes(item.id))
   const selectedAmount = selectedRows.reduce((sum, item) => sum + item.grantAmount, 0)
-  const allChecked = rows.length > 0 && rows.every((item) => selectedIds.includes(item.id))
+  const allChecked = orderableRows.length > 0 && orderableRows.every((item) => selectedIds.includes(item.id))
 
   const switchL1 = (next: SceneL1) => {
     const group = SCENE_TREE.find((item) => item.id === next)
@@ -169,21 +176,32 @@ export function ApprovalListPage() {
   }
 
   const toggle = (id: string) => {
+    const item = rows.find((row) => row.id === id)
+    if (!item || !canPlaceOrder(item.approvalStatus)) {
+      setBlockTip('审批状态为审批通过后，才可以勾选并权益下单。')
+      return
+    }
+    setBlockTip('')
     setSelectedIds((prev) => {
-      if (prev.includes(id)) return prev.filter((item) => item !== id)
+      if (prev.includes(id)) return prev.filter((current) => current !== id)
       if (prev.length >= SELECT_CAP) return prev
       return [...prev, id]
     })
   }
 
   const toggleAll = () => {
+    if (orderableRows.length === 0) {
+      setBlockTip('审批状态为审批通过后，才可以勾选并权益下单。')
+      return
+    }
+    setBlockTip('')
     if (allChecked) {
-      setSelectedIds((prev) => prev.filter((id) => !rows.some((item) => item.id === id)))
+      setSelectedIds((prev) => prev.filter((id) => !orderableRows.some((item) => item.id === id)))
       return
     }
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      for (const item of rows) {
+      for (const item of orderableRows) {
         if (next.size >= SELECT_CAP) break
         next.add(item.id)
       }
@@ -198,10 +216,14 @@ export function ApprovalListPage() {
   }
 
   const openBuy = () => {
-    if (selectedRows.length === 0) return
-    const users = mergeUsers(selectedRows.flatMap((item) => item.users))
+    const approved = selectedRows.filter((item) => canPlaceOrder(item.approvalStatus))
+    if (approved.length === 0) {
+      setBlockTip('审批状态为审批通过后，才可以勾选并权益下单。')
+      return
+    }
+    const users = mergeUsers(approved.flatMap((item) => item.users))
     setApprovalDraft({
-      recordId: selectedRows[0].id,
+      recordId: approved[0].id,
       kind: pickKind,
       productId: pickKind === 'dedicated' ? DEDICATED_SKUS[0]?.id : undefined,
       merchantFeeRate: pickKind === 'general' ? GENERAL_FEE_RATE : FEE_RATE,
@@ -295,6 +317,8 @@ export function ApprovalListPage() {
             <span className="appr-count">
               已选择数量：{selectedRows.length}/{SELECT_CAP}　总金额={selectedAmount}元
             </span>
+            <span className="appr-rule">仅审批通过可选</span>
+            {blockTip ? <span className="appr-block">{blockTip}</span> : null}
           </div>
           <div className="appr-action-right">
             <button className="appr-link" type="button">
@@ -319,7 +343,10 @@ export function ApprovalListPage() {
             <thead>
               <tr>
                 <th rowSpan={2} className="col-check">
-                  <span className={allChecked ? 'appr-box on' : 'appr-box'} onClick={toggleAll} />
+                  <span
+                    className={orderableRows.length === 0 ? 'appr-box is-off' : allChecked ? 'appr-box on' : 'appr-box'}
+                    onClick={toggleAll}
+                  />
                 </th>
                 <th colSpan={12}>审批链基础信息</th>
                 <th colSpan={11}>审批链业务信息</th>
@@ -362,11 +389,12 @@ export function ApprovalListPage() {
             </thead>
             <tbody>
               {rows.map((item) => {
-                const on = selectedIds.includes(item.id)
+                const allowed = canPlaceOrder(item.approvalStatus)
+                const on = allowed && selectedIds.includes(item.id)
                 return (
-                  <tr key={item.id} className={on ? 'is-selected' : ''} onClick={() => toggle(item.id)}>
+                  <tr key={item.id} className={on ? 'is-selected' : allowed ? '' : 'is-locked'} onClick={() => toggle(item.id)}>
                     <td className="col-check">
-                      <span className={on ? 'appr-box on' : 'appr-box'} />
+                      <span className={on ? 'appr-box on' : allowed ? 'appr-box' : 'appr-box is-off'} />
                     </td>
                     <td>{item.batchNo}</td>
                     <td>{item.approvalNo}</td>
@@ -523,7 +551,7 @@ export function ApprovalBuyPage() {
                 <span>
                   {kind === 'general'
                     ? `手续费率 ${GENERAL_FEE_PCT}.00% · 全部商户承担 · 不可调整`
-                    : `手续费率 ${FEE_PCT}.00% · 必须拆满 · 默认商户全部承担`}
+                    : `手续费率 ${FEE_PCT}.00%`}
                 </span>
               </div>
             </div>
@@ -538,11 +566,7 @@ export function ApprovalBuyPage() {
                   通用积分
                 </button>
               </div>
-              <em>
-                {kind === 'general'
-                  ? '用户可直接用积分兑换积分专区商品'
-                  : '一次只能选一种。用户先在权益专区兑成通用金余额或抵扣券，再去积分专区选对应支付方式'}
-              </em>
+              {kind === 'general' ? <em>用户可直接用积分兑换积分专区商品</em> : null}
             </div>
 
             {kind === 'dedicated' ? (

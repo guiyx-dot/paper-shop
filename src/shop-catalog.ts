@@ -59,6 +59,10 @@ export type MallConfig = {
 
 const tones = ['#fff1e6', '#eef4ff', '#eefaf3', '#fff1f6', '#f6f3ee', '#fff6ec']
 
+function goodsImg(file: string) {
+  return `${import.meta.env.BASE_URL}goods/${file}`
+}
+
 function good(
   id: string,
   name: string,
@@ -82,11 +86,11 @@ export const DEFAULT_GOODS: ShopGood[] = [
   good('ejiao', '【张太和】阿胶糕 60g*6盒', '178.18', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[0]),
   good('eye', '【倍轻松】眼部按摩器 EM002', '456.36', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[1]),
   good('paw', '【伟易达】汪汪队立大功救援套装', '198.99', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[2]),
-  good('wood', '【乡村振兴】山真美椴木细木耳 200g', '54.99', { categoryId: 'c-food', tags: ['包邮', '省心购'] }, tones[3]),
-  good('oil', '【刀唛】压榨花生油 5L', '169.89', { categoryId: 'c-food', tags: ['包邮', '省心购'] }, tones[4]),
+  good('wood', '【乡村振兴】山真美椴木细木耳 200g', '54.99', { categoryId: 'c-food', tags: ['包邮', '省心购'], image: goodsImg('wood.jpg') }, tones[3]),
+  good('oil', '【刀唛】压榨花生油 5L', '169.89', { categoryId: 'c-food', tags: ['包邮', '省心购'], image: goodsImg('oil.jpg') }, tones[4]),
   good('mushroom', '【神农唛】精选猴头菇 180g', '42', { categoryId: 'c-food', tags: ['包邮'] }, tones[5]),
   good('morel', '【神农唛】精选羊肚菌 100g', '218', { categoryId: 'c-food', tags: ['包邮'] }, tones[0]),
-  good('crisp', '【雅觅】原味晶沙酥 360g', '57.99', { categoryId: 'c-snack', tags: ['包邮', '省心购'] }, tones[1]),
+  good('crisp', '【雅觅】原味晶沙酥 360g', '57.99', { categoryId: 'c-snack', tags: ['包邮', '省心购'], image: goodsImg('crisp.jpg') }, tones[1]),
   good('datecake', '【雅觅】元气蜂蜜枣糕 1000g', '59.79', { categoryId: 'c-snack', tags: ['包邮', '省心购'] }, tones[2]),
   good('pullcake', '【雅觅】拔丝蛋糕 500g', '33.89', { categoryId: 'c-snack', tags: ['包邮', '省心购'] }, tones[3]),
   good('pastry', '【雅觅】蝴蝶酥 210g', '39.89', { categoryId: 'c-snack', tags: ['包邮', '省心购'] }, tones[4]),
@@ -97,11 +101,11 @@ export const DEFAULT_GOODS: ShopGood[] = [
   good('iqiyi', '爱奇艺年卡', '377.5', { categoryId: 'c-audio', drop: '直降240.5点', tags: ['视听'] }, tones[2]),
   good('tencent', '腾讯视频年卡', '379', { categoryId: 'c-audio', drop: '直降109点', tags: ['视听'] }, tones[1]),
   good('birthday', '生日蛋糕', '234.1', { categoryId: 'c-snack', drop: '直降14.9点', tags: ['蛋糕'] }, tones[3]),
-  good('apple', '大凉山盐源丑苹果', '41.5', { categoryId: 'c-fresh', origin: '45.8', spec: '4.5斤（70-75mm）', tags: ['包邮'] }, tones[0]),
-  good('scrub', '安野屋磨砂膏', '72', { categoryId: 'c-care', origin: '85', tags: ['特价'] }, tones[4]),
+  good('apple', '大凉山盐源丑苹果', '41.5', { categoryId: 'c-fresh', origin: '45.8', spec: '4.5斤（70-75mm）', tags: ['包邮'], image: goodsImg('apple.jpg') }, tones[0]),
+  good('scrub', '安野屋磨砂膏', '72', { categoryId: 'c-care', origin: '85', tags: ['特价'], image: goodsImg('scrub.jpg') }, tones[4]),
   good('sausage', '香肠', '40', { categoryId: 'c-snack', tags: ['买手'] }, tones[5]),
   good('seat', '座椅', '880', { categoryId: 'c-home', tags: ['买手'] }, tones[1]),
-  good('lotion', '身体乳', '74.9', { categoryId: 'c-care', tags: ['新品'] }, tones[3]),
+  good('lotion', '身体乳', '74.9', { categoryId: 'c-care', tags: ['新品'], image: goodsImg('lotion.jpg') }, tones[3]),
 ]
 
 const carefulIds = DEFAULT_GOODS.filter((item) => item.tags.includes('省心购')).map((item) => item.id)

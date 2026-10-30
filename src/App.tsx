@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar, ZcbMemberPage } from './pages'
+import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar } from './pages'
+import { ZcbMemberPage } from './zcb-pages'
 import { ShopDetailPage, ShopPointsPage, ShopShelfPage } from './shop-pages'
 import AdminApp from './admin/AdminApp'
 import { Phase2Brief } from './phase2-brief'

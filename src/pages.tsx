@@ -2,8 +2,10 @@ import { USER, PRODUCTS, PRODUCT_TONES, BENEFIT_CHANNELS, HOME_BENEFIT_PRODUCTS,
 import { NavIcon, ProductIcon } from './icons'
 import { NavBar, StatusBar } from './components'
 import { FuduoHome } from './fuduo-home'
+import { pointCost, useMallConfig } from './shop-catalog'
+import { loadShopOrders } from './admin/shop-orders'
 import { GOLD_PRODUCT_ID, useStore } from './store'
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { BenefitChannel, GiftPackItem, PayMethod, Product, RightsTab, Screen, ZoneFrom } from './types'
 
 function money(n: number) {
@@ -1069,79 +1071,177 @@ export function CorpPayPage({ fromOrderId }: { fromOrderId?: string }) {
   )
 }
 
+function MineGlyph({ kind }: { kind: 'pay' | 'ship' | 'receive' | 'review' | 'refund' }) {
+  const common = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true as const }
+  if (kind === 'pay') {
+    return (
+      <svg {...common}>
+        <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+  if (kind === 'ship') {
+    return (
+      <svg {...common}>
+        <path d="M4 8h11v8H4zM15 11h3l2 2.5V16h-5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <circle cx="7.5" cy="17.5" r="1.4" stroke="currentColor" strokeWidth="1.4" />
+        <circle cx="17" cy="17.5" r="1.4" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    )
+  }
+  if (kind === 'receive') {
+    return (
+      <svg {...common}>
+        <path d="M4 8.5 12 4l8 4.5v9L12 20l-8-2.5v-9Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M12 12.2 20 8.5M12 12.2V20M12 12.2 4 8.5" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+  if (kind === 'review') {
+    return (
+      <svg {...common}>
+        <path d="M7 17.5 4.5 20V6.5A1.5 1.5 0 0 1 6 5h12a1.5 1.5 0 0 1 1.5 1.5V16a1.5 1.5 0 0 1-1.5 1.5H7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <path d="M7 8V6.5A5 5 0 0 1 17 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M17 16v1.5a5 5 0 0 1-9.5 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M6 8H3.5v4H6M18 16h2.5v-4H18" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function goodsTitle(name: string) {
+  return name.replace(/^【[^】]*】/, '').trim()
+}
+
 export function MinePage() {
-  const { points, go, ledger, pendingAmount, pendingCount, reset, goldBalance, coupons, couponTotal } = useStore()
+  const { points, go, pendingAmount, pendingCount, reset, goldBalance, coupons } = useStore()
+  const config = useMallConfig()
+  const [orderTick, setOrderTick] = useState(0)
+
+  useEffect(() => {
+    const sync = () => setOrderTick((value) => value + 1)
+    window.addEventListener('points-mall-sync', sync)
+    return () => window.removeEventListener('points-mall-sync', sync)
+  }, [])
+
+  const orderCounts = useMemo(() => {
+    const list = loadShopOrders()
+    return {
+      pay: 0,
+      ship: list.filter((item) => item.status === 'pending').length,
+      receive: list.filter((item) => item.status === 'shipped').length,
+      review: list.filter((item) => item.status === 'completed').length,
+      refund: list.filter((item) => item.status === 'refunding' || item.status === 'refunded').length,
+    }
+  }, [orderTick])
+
+  const recommends = useMemo(() => {
+    const wanted = ['oil', 'apple', 'lotion', 'crisp', 'scrub', 'wood']
+    const onShelf = config.goods.filter((item) => item.onShelf)
+    const picked = wanted.map((id) => onShelf.find((item) => item.id === id)).filter((item) => item != null)
+    return picked.length >= 4 ? picked.slice(0, 6) : onShelf.slice(0, 6)
+  }, [config.goods])
+
+  const openOrders = () => go({ name: 'shop-points' })
+
+  const orderEntries = [
+    { id: 'pay', label: '待付款', count: orderCounts.pay },
+    { id: 'ship', label: '待发货', count: orderCounts.ship },
+    { id: 'receive', label: '待收货', count: orderCounts.receive },
+    { id: 'review', label: '待评价', count: orderCounts.review },
+    { id: 'refund', label: '退款/售后', count: orderCounts.refund },
+  ] as const
+
+  const redPacket = goldBalance > 0 ? money(goldBalance) : '18'
+  const couponShown = coupons.length > 0 ? String(coupons.length) : '3'
 
   return (
     <div className="page mine-page">
-      <StatusBar />
-      <NavBar title="会员" />
-      <div className="user-row">
-        <div className="avatar">{USER.name.slice(0, 1)}</div>
+      <div className="mine-hero">
+        <StatusBar />
+        <NavBar title="我的" />
+        <div className="mine-user">
+          <div className="avatar">{USER.name.slice(0, 1)}</div>
+          <div>
+            <div className="user-name">{USER.name}</div>
+            <div className="user-phone">{USER.phone}</div>
+          </div>
+        </div>
+
+        <section className="mine-card is-vip">
+          <div className="mine-wallet">
+            <button type="button" onClick={() => go({ name: 'shop-points' })}>
+              <strong>{points}</strong>
+              <span>积分</span>
+            </button>
+            <button type="button">
+              <strong>¥{redPacket}</strong>
+              <span>红包</span>
+            </button>
+            <button type="button">
+              <strong>{couponShown}张</strong>
+              <span>优惠券</span>
+            </button>
+          </div>
+          {pendingCount > 0 ? (
+            <button className="mine-claim" type="button" onClick={() => go({ name: 'claim' })}>
+              还有 {pendingAmount} 积分待领取
+              <span>去领取</span>
+            </button>
+          ) : null}
+        </section>
+      </div>
+
+      <section className="mine-card">
+        <div className="mine-card-head">
+          <h3>我的订单</h3>
+          <button type="button" onClick={openOrders}>
+            全部 ›
+          </button>
+        </div>
+        <div className="mine-orders">
+          {orderEntries.map((item) => (
+            <button key={item.id} type="button" onClick={openOrders}>
+              <span className="mine-order-ico">
+                <MineGlyph kind={item.id} />
+                {item.count > 0 ? <i>{item.count}</i> : null}
+              </span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <button className="mine-ad" type="button" onClick={() => go({ name: 'shop-shelf', shelf: 'video' })}>
+        <em>广告</em>
         <div>
-          <div className="user-name">{USER.name}</div>
-          <div className="user-phone">{USER.phone}</div>
+          <strong>视听会员 5折起</strong>
+          <span>爱奇艺、腾讯视频年卡</span>
         </div>
-      </div>
-      <div className="account-card">
-        <div className="account-top">我的账户</div>
-        <div className="account-grid is-three">
-          <div>
-            <span>可用积分</span>
-            <strong>{points}</strong>
-          </div>
-          <div>
-            <span>通用金余额</span>
-            <strong>{money(goldBalance)}</strong>
-          </div>
-          <div>
-            <span>抵扣券</span>
-            <strong>{money(couponTotal)}</strong>
-          </div>
-        </div>
-        {coupons.length > 0 ? (
-          <div className="voucher-line">
-            {coupons.map((item) => `${item.name} ${money(item.value)}`).join(' · ')}
-            ，可在积分专区抵扣
-          </div>
-        ) : goldBalance > 0 ? (
-          <div className="voucher-line">通用金可在积分专区作为余额支付</div>
-        ) : null}
-      </div>
-      <div className="corp-card">
-        <span className="ok">✓</span>
-        {USER.corp}
-      </div>
-      {pendingCount > 0 ? (
-        <button className="pending-banner" onClick={() => go({ name: 'claim' })}>
-          您还有 {pendingAmount} 积分待领取
-          <span>去领取</span>
-        </button>
-      ) : null}
-      <button className="plain-card" onClick={() => go({ name: 'records' })}>
-        <div>
-          <div className="plain-title">兑换记录</div>
-          <div className="plain-sub">查看已兑换商品与订单详情</div>
-        </div>
-        <span className="chev">›</span>
       </button>
-      <div className="section-head">
-        <span>额度变动明细</span>
-      </div>
-      <div className="ledger">
-        {ledger.length === 0 ? <div className="empty">暂无变动</div> : null}
-        {ledger.map((item) => (
-          <div key={item.id} className="ledger-row">
-            <div>
-              <div className="ledger-title">{item.title}</div>
-              <div className="ledger-time">{item.time}</div>
-            </div>
-            <strong className={item.amount > 0 ? 'plus' : 'accent'}>
-              {item.amount > 0 ? `+${item.amount}` : item.amount}
-            </strong>
-          </div>
-        ))}
-      </div>
+
+      <section className="mine-rec">
+        <div className="mine-card-head">
+          <h3>商品推荐</h3>
+        </div>
+        <div className="mine-grid">
+          {recommends.map((item) => (
+            <button key={item.id} type="button" onClick={() => go({ name: 'shop-detail', productId: item.id, from: 'mall' })}>
+              <span className="mine-cover" style={{ background: item.tone }}>
+                {item.image ? <img src={item.image} alt="" /> : goodsTitle(item.name).slice(0, 1)}
+              </span>
+              <span className="mine-gname">{goodsTitle(item.name)}</span>
+              <b>{pointCost(item.price)} 积分</b>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <button className="reset-demo" onClick={reset}>
         重置演示数据
       </button>
@@ -1178,74 +1278,3 @@ export function RecordsPage() {
   )
 }
 
-export function ZcbMemberPage() {
-  const [hide, setHide] = useState(false)
-  return (
-    <div className="page zcb-page">
-      <div className="zcb-hero">
-        <StatusBar />
-        <div className="zcb-nav">
-          <span className="zcb-back" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M15 5 8 12l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            会员服务
-          </span>
-          <span className="zcb-capsule" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-        </div>
-        <div className="zcb-card">
-          <div>
-            <h2>支车宝会员中心</h2>
-            <div className="member-user">
-              <span className="member-avatar">云</span>
-              <span>云曦</span>
-              <span className="member-info-pill">个人信息 ›</span>
-            </div>
-          </div>
-          <div className="member-gem" aria-hidden="true" />
-        </div>
-      </div>
-      <section className="zcb-perks">
-        <div className="zcb-head">
-          <h3>专属福利</h3>
-          <button type="button" onClick={() => setHide((value) => !value)}>
-            {hide ? '隐藏' : '显示'}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-          </button>
-        </div>
-        <div className="zcb-grid">
-          <div className="zcb-gold">
-            <div className="zcb-gold-label">通用金</div>
-            <span className="zcb-coin" aria-hidden="true" />
-            <p>您的专属积分</p>
-            <strong>{hide ? '****' : '1.00'}</strong>
-            <span className="zcb-more">查看更多</span>
-          </div>
-          <div className="zcb-lite is-rights">
-            <div>我的权益</div>
-            <b>{hide ? '**' : '1项'}</b>
-            <span className="zcb-more">查看更多</span>
-          </div>
-          <div className="zcb-lite is-corp">
-            <div>因公付</div>
-            <b>{hide ? '****' : '¥0.00'}</b>
-            <span className="zcb-more">查看更多</span>
-          </div>
-        </div>
-      </section>
-      <button className="zcb-service" type="button" aria-label="客服">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M4 13a8 8 0 0 1 16 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M4 13v4a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 2Zm16 0v4a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" fill="#fff" />
-        </svg>
-      </button>
-    </div>
-  )
-}
