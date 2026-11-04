@@ -25,9 +25,6 @@ function GoldPacket() {
         <path d="M1 20c11 10 21 15 31 15s20-5 31-15" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
         <circle cx="32" cy="21" r="8.4" fill="#ffc53d" />
         <circle cx="32" cy="21" r="5.5" fill="#ffe9ad" />
-        <text x="32" y="54" textAnchor="middle" fontSize="26" fontWeight="700" fill="#fff3f1" fontFamily="PingFang SC, Hiragino Sans GB, sans-serif">
-          金
-        </text>
       </svg>
     </div>
   )

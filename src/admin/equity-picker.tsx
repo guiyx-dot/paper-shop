@@ -1,108 +1,95 @@
 import { useState } from 'react'
-import { ProductIcon } from '../icons'
-import { DEDICATED_SKUS, FEE_PCT, UNIT_PRICE, dedicatedLabel, money } from './model'
+import { AlipayCoinArt, AlipayCouponArt, WechatCoinArt, WechatCouponArt } from './alipay-coin-art'
+import { AlipayPlusArt } from './alipay-plus-art'
+import { hasShelfPhoto, ShelfPhoto } from './shelf-photo'
+import { FEE_RATE, GENERAL_FEE_PCT, PURCHASE_GOODS, UNIT_PRICE, money } from './model'
 
-const TABS: { id: string; label: string; ids: string[] }[] = [
-  { id: 'gold', label: '通用金', ids: ['gold-wechat', 'gold-alipay'] },
-  { id: 'alipay', label: '支付宝', ids: ['alipay', 'alipay-plus'] },
-  { id: 'wechat', label: '微信', ids: ['wechat'] },
+const TABS: { id: 'coin' | 'coupon'; label: string }[] = [
+  { id: 'coin', label: '币' },
+  { id: 'coupon', label: '券' },
 ]
 
-const GOLD_META: Record<string, { tag: string; detail: string }> = {
-  'gold-wechat': { tag: '【支持微信转出】', detail: '每日每人1000/天' },
-  'gold-alipay': { tag: '【支持支付宝转出】', detail: '每日每人1000/天' },
-}
-
-function tabFor(productId: string) {
-  return TABS.find((item) => item.ids.includes(productId))?.id ?? TABS[0].id
+function tabFor(productId: string): 'coin' | 'coupon' {
+  return PURCHASE_GOODS.find((item) => item.id === productId)?.tab ?? 'coin'
 }
 
 export function EquityPicker({
   value,
   onSelect,
-  onClose,
+  coinsOnly = false,
 }: {
   value: string
   onSelect: (id: string) => void
-  onClose: () => void
+  coinsOnly?: boolean
 }) {
-  const [tab, setTab] = useState(() => tabFor(value))
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const ids = TABS.find((item) => item.id === tab)?.ids ?? []
-  const items = DEDICATED_SKUS.filter((item) => ids.includes(item.id))
+  const tabs = coinsOnly ? TABS.filter((item) => item.id === 'coin') : TABS
+  const [tab, setTab] = useState<'coin' | 'coupon'>(() => (coinsOnly ? 'coin' : tabFor(value)))
+  const items = PURCHASE_GOODS.filter((item) => item.tab === tab)
 
   return (
-    <div className="admin-mask" onClick={onClose}>
-      <div className="admin-modal equity-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="account-modal-head">
-          主权益
-          <button className="account-modal-x" type="button" onClick={onClose} aria-label="关闭">
-            ×
+    <div className="equity-inline">
+      <div className="equity-tabs">
+        {tabs.map((item) => (
+          <button key={item.id} className={tab === item.id ? 'on' : ''} type="button" onClick={() => setTab(item.id)}>
+            {item.label}
           </button>
+        ))}
+      </div>
+      <div className="equity-list is-page">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            className={value === item.id ? 'equity-tile on' : 'equity-tile'}
+            type="button"
+            onClick={() => onSelect(item.id)}
+          >
+            <span className={item.id === 'gold-alipay' || item.id === 'gold-wechat' || item.id === 'alipay' || item.id === 'wechat' || item.id === 'alipay-plus' || hasShelfPhoto(item.id) ? 'equity-tile-slot is-art' : 'equity-tile-slot'} aria-hidden>
+              {item.id === 'gold-alipay' ? <AlipayCoinArt /> : null}
+              {item.id === 'gold-wechat' ? <WechatCoinArt /> : null}
+              {item.id === 'alipay' ? <AlipayCouponArt /> : null}
+              {item.id === 'wechat' ? <WechatCouponArt /> : null}
+              {item.id === 'alipay-plus' ? <AlipayPlusArt /> : null}
+              {hasShelfPhoto(item.id) ? <ShelfPhoto id={item.id} /> : null}
+            </span>
+            <strong>{item.name}</strong>
+            <em>¥ {money(UNIT_PRICE)}</em>
+            <span className="equity-fee">服务费 ¥{money(UNIT_PRICE * FEE_RATE)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function GeneralPointsCard({ selected, onSelect }: { selected: boolean; onSelect: () => void }) {
+  return (
+    <div
+      className={selected ? 'equity-card on' : 'equity-card'}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onSelect()
+        }
+      }}
+    >
+      <div className="points-mark is-card">积</div>
+      <div className="equity-card-body">
+        <div className="equity-title">
+          <strong>通用积分</strong>
         </div>
-        <div className="equity-tabs">
-          {TABS.map((item) => (
-            <button key={item.id} className={tab === item.id ? 'on' : ''} type="button" onClick={() => setTab(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="equity-list">
-          {items.map((item) => {
-            const meta = GOLD_META[item.id]
-            return (
-              <div
-                key={item.id}
-                className={value === item.id ? 'equity-card on' : 'equity-card'}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect(item.id)}
-                onKeyDown={(event) => {
-                  if (event.target !== event.currentTarget) return
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    onSelect(item.id)
-                  }
-                }}
-              >
-                <ProductIcon id={item.id} />
-                <div className="equity-card-body">
-                  <div className="equity-title">
-                    <strong>{dedicatedLabel(item.name)}</strong>
-                    {meta ? <em className="equity-tag">{meta.tag}</em> : null}
-                    {meta ? (
-                      <button
-                        className="equity-detail"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setDetailId((current) => (current === item.id ? null : item.id))
-                        }}
-                      >
-                        详情
-                      </button>
-                    ) : null}
-                  </div>
-                  {meta && detailId === item.id ? (
-                    <div className="equity-detail-pop" onClick={(event) => event.stopPropagation()}>
-                      <span>商品详情</span>
-                      <p>{meta.detail}</p>
-                    </div>
-                  ) : null}
-                  <div className="equity-metrics">
-                    <div>
-                      <b>{money(UNIT_PRICE)}</b>
-                      <span>单价</span>
-                    </div>
-                    <div>
-                      <b>{FEE_PCT.toFixed(2)}%</b>
-                      <span>手续费率</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+        <p className="equity-note">兑换「积分专区」专属商品</p>
+        <div className="equity-metrics">
+          <div>
+            <b>{money(UNIT_PRICE)}</b>
+            <span>单价</span>
+          </div>
+          <div>
+            <b>{GENERAL_FEE_PCT.toFixed(2)}%</b>
+            <span>服务费率</span>
+          </div>
         </div>
       </div>
     </div>

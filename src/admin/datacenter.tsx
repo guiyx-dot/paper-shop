@@ -25,9 +25,11 @@ type DetailRow = {
   reward?: string
   couponRemark: string
   remark: string
+  goodsCode: string
   arrivedAmount?: string
   withdrawn?: boolean
   revoked?: boolean
+  reissued?: boolean
 }
 
 const BENEFIT_FIELDS: Field[] = [
@@ -73,20 +75,25 @@ const FUND_FIELDS: Field[] = [
 ]
 
 const SEED_BENEFIT: DetailRow[] = [
-  { id: 'b1', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-07 11:19:49', viewAt: '2026-10-07 11:19:58', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02006144030026', batchNo: '09274624', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '', withdrawn: true },
-  { id: 'b2', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-06 16:17:50', viewAt: '2026-10-06 16:18:19', couponName: '因公付（企业权益）', face: '1元', fee: '¥0.08', couponNo: '02006144030025', batchNo: '09274347', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '' },
-  { id: 'b3', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-05 16:56:26', viewAt: '2026-10-05 16:56:43', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02006144030024', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '' },
-  { id: 'b4', merchant: '产研中心线上验证专用', name: '', phone: '18067972318', idNo: '', issueAt: '2026-10-05 16:56:26', viewAt: '', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02001264950023', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '未使用', couponRemark: '', remark: '' },
-  { id: 'b5', merchant: '产研中心线上验证专用', name: '', phone: '18806521450', idNo: '', issueAt: '2026-10-04 16:56:26', viewAt: '2026-10-04 16:58:16', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '0200308643000', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '' },
-  { id: 'b6', merchant: '产研中心线上验证专用', name: '刘雄', phone: '13758257534', idNo: '', issueAt: '2026-10-02 10:04:13', viewAt: '2026-10-02 10:04:33', couponName: '卡赢微信立减金-测试-1元', face: '1元', fee: '¥0.08', couponNo: '020070716804', batchNo: '', bizType: '', approvalNo: '', issueStatus: '', useStatus: '', couponRemark: '', remark: '' },
+  { id: 'b1', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-07 11:19:49', viewAt: '2026-10-07 11:19:58', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02006144030026', batchNo: '09274624', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '', goodsCode: '06030000193800003', withdrawn: true },
+  { id: 'b2', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-06 16:17:50', viewAt: '2026-10-06 16:18:19', couponName: '因公付（企业权益）', face: '1元', fee: '¥0.08', couponNo: '02006144030025', batchNo: '09274347', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '', goodsCode: '06030000193800011' },
+  { id: 'b3', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-05 16:56:26', viewAt: '2026-10-05 16:56:43', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02006144030024', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '', goodsCode: '06030000193800003', reissued: true },
+  { id: 'b4', merchant: '产研中心线上验证专用', name: '', phone: '18067972318', idNo: '', issueAt: '2026-10-05 16:56:26', viewAt: '', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '02001264950023', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '未使用', couponRemark: '', remark: '', goodsCode: '06030000193800003', reissued: true },
+  { id: 'b5', merchant: '产研中心线上验证专用', name: '', phone: '18806521450', idNo: '', issueAt: '2026-10-04 16:56:26', viewAt: '2026-10-04 16:58:16', couponName: '测试奥塞斯因公付1元', face: '1元', fee: '¥0.08', couponNo: '0200308643000', batchNo: '09273677', bizType: '其他', approvalNo: '', issueStatus: '已发放', useStatus: '已使用', couponRemark: '', remark: '', goodsCode: '06030000193800003' },
+  { id: 'b6', merchant: '产研中心线上验证专用', name: '刘雄', phone: '13758257534', idNo: '', issueAt: '2026-10-02 10:04:13', viewAt: '2026-10-02 10:04:33', couponName: '卡赢微信立减金-测试-1元', face: '1元', fee: '¥0.08', couponNo: '020070716804', batchNo: '', bizType: '', approvalNo: '', issueStatus: '', useStatus: '', couponRemark: '', remark: '', goodsCode: '06030000193800028' },
 ]
 
 const SEED_FUND: DetailRow[] = [
-  { id: 'f1', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-07 17:50:15', viewAt: '2026-10-07 17:50:30', couponName: '通用金', face: '1元', fee: '¥0.08', couponNo: '20997979414270402', batchNo: '09270826', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0', couponRemark: '', remark: '', arrivedAmount: '¥1', withdrawn: true },
-  { id: 'f2', merchant: '产研中心线上验证专用', name: '', phone: '13210046919', idNo: '', issueAt: '2026-10-06 16:55:41', viewAt: '2026-10-06 17:02:00', couponName: '通用金', face: '2元', fee: '¥0.14', couponNo: '20976098789768705', batchNo: '09266727', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0.1', couponRemark: '', remark: '', arrivedAmount: '¥2' },
-  { id: 'f3', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-05 16:45:01', viewAt: '2026-10-05 16:46:17', couponName: '通用金', face: '1.1元', fee: '¥0.08', couponNo: '20976071946123265', batchNo: '09266712', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0.06', couponRemark: '', remark: '', arrivedAmount: '¥1.1' },
-  { id: 'f4', merchant: '产研中心线上验证专用', name: '', phone: '15528222001', idNo: '', issueAt: '2026-10-02 09:45:59', viewAt: '', couponName: '通用金', face: '1元', fee: '¥0.08', couponNo: '20949650278747521', batchNo: '09261766', bizType: '其他', approvalNo: '', issueStatus: '已失效', arriveStatus: '未到账', reward: '¥0', couponRemark: '', remark: '', arrivedAmount: '¥0' },
+  { id: 'f1', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-07 17:50:15', viewAt: '2026-10-07 17:50:30', couponName: '通用金', face: '1元', fee: '¥0.08', couponNo: '20997979414270402', batchNo: '09270826', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0', couponRemark: '', remark: '', goodsCode: '06030000193800040', arrivedAmount: '¥1', withdrawn: true },
+  { id: 'f2', merchant: '产研中心线上验证专用', name: '', phone: '13210046919', idNo: '', issueAt: '2026-10-06 16:55:41', viewAt: '2026-10-06 17:02:00', couponName: '通用金', face: '2元', fee: '¥0.14', couponNo: '20976098789768705', batchNo: '09266727', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0.1', couponRemark: '', remark: '', goodsCode: '06030000193800040', arrivedAmount: '¥2' },
+  { id: 'f3', merchant: '产研中心线上验证专用', name: '', phone: '17858938786', idNo: '', issueAt: '2026-10-05 16:45:01', viewAt: '2026-10-05 16:46:17', couponName: '通用金', face: '1.1元', fee: '¥0.08', couponNo: '20976071946123265', batchNo: '09266712', bizType: '其他', approvalNo: '', issueStatus: '已查看', arriveStatus: '已到账', reward: '¥0.06', couponRemark: '', remark: '', goodsCode: '06030000193800040', arrivedAmount: '¥1.1' },
+  { id: 'f4', merchant: '产研中心线上验证专用', name: '', phone: '15528222001', idNo: '', issueAt: '2026-10-02 09:45:59', viewAt: '', couponName: '通用金', face: '1元', fee: '¥0.08', couponNo: '20949650278747521', batchNo: '09261766', bizType: '其他', approvalNo: '', issueStatus: '已失效', arriveStatus: '未到账', reward: '¥0', couponRemark: '', remark: '', goodsCode: '06030000193800040', arrivedAmount: '¥0' },
 ]
+
+function issueAmount(face: string) {
+  const value = Number.parseFloat(face.replace(/[^\d.]/g, ''))
+  return Number.isFinite(value) ? value.toFixed(2) : face
+}
 
 const WHITELIST = new Set(['产研中心线上验证专用'])
 
@@ -167,6 +174,10 @@ export function DatacenterPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [toast, setToast] = useState('')
+  const [reissueOnce, setReissueOnce] = useState(false)
+  const [reissueId, setReissueId] = useState<string | null>(null)
+  const [reissueReason, setReissueReason] = useState('')
+  const [reissueMissing, setReissueMissing] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [visible, setVisible] = useState<string[]>(BENEFIT_FIELDS.map((item) => item.id))
@@ -257,6 +268,26 @@ export function DatacenterPage() {
     }
     setPendingId(null)
     showToast('撤回成功')
+  }
+
+  const reissueRow = benefitRows.find((row) => row.id === reissueId) ?? fundRows.find((row) => row.id === reissueId) ?? null
+
+  const closeReissue = () => {
+    setReissueId(null)
+    setReissueReason('')
+    setReissueMissing(false)
+  }
+
+  const confirmReissue = () => {
+    if (!reissueReason.trim()) {
+      setReissueMissing(true)
+      return
+    }
+    const mark = (row: DetailRow) => (row.id === reissueId ? { ...row, reissued: true } : row)
+    setBenefitRows((prev) => prev.map(mark))
+    setFundRows((prev) => prev.map(mark))
+    closeReissue()
+    showToast('补发成功')
   }
 
   const cell = (id: string, row: DetailRow) => {
@@ -420,6 +451,21 @@ export function DatacenterPage() {
                             撤回
                           </button>
                         )}
+                        <button
+                          className={row.reissued ? 'is-blocked' : ''}
+                          type="button"
+                          onClick={() => {
+                            if (row.reissued) {
+                              setReissueOnce(true)
+                              return
+                            }
+                            setReissueReason('')
+                            setReissueMissing(false)
+                            setReissueId(row.id)
+                          }}
+                        >
+                          补发
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -455,14 +501,14 @@ export function DatacenterPage() {
 
       {pendingId ? (
         <div className="admin-mask" onClick={() => setPendingId(null)}>
-          <div className="admin-modal dc-confirm" onClick={(event) => event.stopPropagation()}>
+          <div className="admin-modal dc-confirm" role="dialog" aria-modal="true" aria-labelledby="revoke-title" onClick={(event) => event.stopPropagation()}>
+            <div className="dc-confirm-head">
+              <span className="dc-confirm-tag">重要提示</span>
+              <h2 id="revoke-title">撤回确认</h2>
+            </div>
             <div className="dc-confirm-body">
-              <i />
-              <p>
-                你正在撤回对应所选记录，撤回后对应卡券/商品将不再可用，并会退款给商户。
-                <br />
-                确定继续？
-              </p>
+              <p>你正在撤回对应所选记录，撤回后对应卡券/商品将不再可用，并会退款给商户。</p>
+              <p>退款不包含服务费，确定继续？</p>
             </div>
             <div className="modal-actions">
               <button className="admin-ghost" type="button" onClick={() => setPendingId(null)}>
@@ -524,6 +570,70 @@ export function DatacenterPage() {
                 }}
               >
                 确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reissueRow ? (
+        <div className="admin-mask" onClick={closeReissue}>
+          <div className="admin-modal reissue-form" role="dialog" aria-modal="true" aria-labelledby="reissue-lead" onClick={(event) => event.stopPropagation()}>
+            <p id="reissue-lead" className="reissue-form-lead">
+              补发内容如下，请确认是否补发，每条数据只可补发一次。
+            </p>
+            <div className="reissue-form-row">
+              <span>发放商品:</span>
+              <input readOnly value={reissueRow.goodsCode} />
+            </div>
+            <div className="reissue-form-row">
+              <span>发放金额:</span>
+              <div className="reissue-amount">
+                <input readOnly value={issueAmount(reissueRow.face)} />
+                <em>请确认发放金额是否正确</em>
+              </div>
+            </div>
+            <div className="reissue-form-row is-reason">
+              <span>
+                <i>*</i>补发原因:
+              </span>
+              <div className="reissue-reason">
+                <textarea
+                  maxLength={120}
+                  value={reissueReason}
+                  onChange={(event) => {
+                    setReissueReason(event.target.value.slice(0, 120))
+                    setReissueMissing(false)
+                  }}
+                />
+                <em>
+                  {reissueReason.length} / 120
+                </em>
+              </div>
+            </div>
+            {reissueMissing ? <p className="reissue-missing">请填写补发原因</p> : null}
+            <div className="modal-actions">
+              <button className="admin-ghost" type="button" onClick={closeReissue}>
+                取消
+              </button>
+              <button className="admin-primary" type="button" onClick={confirmReissue}>
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reissueOnce ? (
+        <div className="admin-mask" onClick={() => setReissueOnce(false)}>
+          <div className="admin-modal reissue-once" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="reissue-once-body">
+              <i>i</i>
+              <p>每条数据只能补发一次。</p>
+            </div>
+            <div className="modal-actions">
+              <button className="admin-ghost" type="button" onClick={() => setReissueOnce(false)}>
+                知道了
               </button>
             </div>
           </div>

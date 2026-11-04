@@ -1119,7 +1119,7 @@ function goodsTitle(name: string) {
 }
 
 export function MinePage() {
-  const { points, go, pendingAmount, pendingCount, reset, goldBalance, coupons } = useStore()
+  const { points, go, pendingAmount, pendingCount, claimPending, reset, goldBalance, coupons } = useStore()
   const config = useMallConfig()
   const [orderTick, setOrderTick] = useState(0)
 
@@ -1189,7 +1189,7 @@ export function MinePage() {
             </button>
           </div>
           {pendingCount > 0 ? (
-            <button className="mine-claim" type="button" onClick={() => go({ name: 'claim' })}>
+            <button className="mine-claim" type="button" onClick={claimPending}>
               还有 {pendingAmount} 积分待领取
               <span>去领取</span>
             </button>

@@ -1,21 +1,18 @@
 import { useMemo, useState } from 'react'
-import { ProductIcon } from '../icons'
-import { BuyPreview } from './buy-preview'
 import { AccountViewButton } from './accounts'
-import { EquityPicker } from './equity-picker'
+import { EquityPicker, GeneralPointsCard } from './equity-picker'
+import { ProductIcon } from '../icons'
 import {
   APPROVAL_RECORDS,
-  DEDICATED_SKUS,
-  FEE_PCT,
   FEE_RATE,
   GENERAL_FEE_RATE,
-  GENERAL_FEE_PCT,
   SCENE_TREE,
-  UNIT_PRICE,
   approvalById,
   dedicatedLabel,
-  feePctFor,
+  purchaseGoodName,
+  skuById,
   feeRateFor,
+  isCommissionScene,
   money,
   planFromRows,
   quote,
@@ -34,66 +31,42 @@ function pointsHeroCopy(kind: PurchaseKind) {
     : '采购后发放给审批单用户，作为积分专区通用积分。'
 }
 
-export function KindPicker({ kind, onKind }: { kind: PurchaseKind; onKind: (kind: PurchaseKind) => void }) {
+export function KindPicker({
+  kind,
+  onKind,
+  plain = false,
+}: {
+  kind: PurchaseKind | null
+  onKind: (kind: PurchaseKind) => void
+  plain?: boolean
+}) {
   const dedicatedOn = kind === 'dedicated'
   const generalOn = kind === 'general'
+  const row = (id: PurchaseKind, on: boolean, mark: string, title: string, note: string) => (
+    <button type="button" className={on ? 'kind-row on' : 'kind-row'} onClick={() => onKind(id)}>
+      <span className="kind-mark" aria-hidden="true">{mark}</span>
+      <span className="kind-row-body">
+        <strong>{title}</strong>
+        <em>{note}</em>
+      </span>
+      <span className={on ? 'radio on' : 'radio'} />
+      <span className="kind-go" aria-hidden="true">选择</span>
+    </button>
+  )
   return (
-    <div className="kind-shell is-list">
-      <div className="points-hero">
-        <strong>积分</strong>
-        <p>{pointsHeroCopy(kind)}</p>
-      </div>
+    <div className={plain ? 'kind-shell is-plain is-band' : 'kind-shell is-list'}>
+      {plain || !kind ? null : (
+        <div className="points-hero">
+          <strong>积分</strong>
+          <p>{pointsHeroCopy(kind)}</p>
+        </div>
+      )}
       <div className="kind-quiet">
         <span>采购类型</span>
-        <button type="button" className={dedicatedOn ? 'kind-row on' : 'kind-row'} onClick={() => onKind('dedicated')}>
-          <span className="kind-row-body">
-            <strong>专用券</strong>
-            <em>权益专区兑成金/券</em>
-          </span>
-          <span className={dedicatedOn ? 'radio on' : 'radio'} />
-        </button>
-        <button type="button" className={generalOn ? 'kind-row on' : 'kind-row'} onClick={() => onKind('general')}>
-          <span className="kind-row-body">
-            <strong>通用积分</strong>
-            <em>兑换「积分专区」专属商品</em>
-          </span>
-          <span className={generalOn ? 'radio on' : 'radio'} />
-        </button>
+        {row('dedicated', dedicatedOn, '券', '专用券', '兑换「权益专区」币/券')}
+        {row('general', generalOn, '积', '通用积分', '兑换「积分专区」专属商品')}
       </div>
     </div>
-  )
-}
-
-function FeeSplitBar({
-  feePct,
-  merchantPct,
-  locked,
-  disabled,
-  onChange,
-}: {
-  feePct: number
-  merchantPct: number
-  locked?: boolean
-  disabled?: boolean
-  onChange?: (value: number) => void
-}) {
-  const userPct = feePct - merchantPct
-  return (
-    <>
-      <span>
-        商户承担 {merchantPct}%　/　用户承担 {userPct}%
-      </span>
-      <input
-        className={locked ? 'fee-range is-locked' : 'fee-range'}
-        type="range"
-        min={0}
-        max={feePct}
-        step={1}
-        value={merchantPct}
-        disabled={locked || disabled}
-        onChange={(event) => onChange?.(Number(event.target.value))}
-      />
-    </>
   )
 }
 
@@ -141,8 +114,6 @@ export function ApprovalListPage() {
   const [batchNo, setBatchNo] = useState('')
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
-  const [picker, setPicker] = useState(false)
-  const [pickKind, setPickKind] = useState<PurchaseKind>('dedicated')
   const [blockTip, setBlockTip] = useState('')
 
   const scene = SCENE_TREE.find((item) => item.id === l1) ?? SCENE_TREE[0]
@@ -224,13 +195,11 @@ export function ApprovalListPage() {
     const users = mergeUsers(approved.flatMap((item) => item.users))
     setApprovalDraft({
       recordId: approved[0].id,
-      kind: pickKind,
-      productId: pickKind === 'dedicated' ? DEDICATED_SKUS[0]?.id : undefined,
-      merchantFeeRate: pickKind === 'general' ? GENERAL_FEE_RATE : FEE_RATE,
+      kind: 'dedicated',
+      merchantFeeRate: FEE_RATE,
       rows: users,
       paid: false,
     })
-    setPicker(false)
     go('approval-buy')
   }
 
@@ -308,7 +277,7 @@ export function ApprovalListPage() {
 
         <div className="appr-action-row">
           <div className="appr-action-left">
-            <button className="admin-outline" disabled={selectedRows.length === 0} type="button" onClick={() => setPicker(true)}>
+            <button className="admin-outline" disabled={selectedRows.length === 0} type="button" onClick={openBuy}>
               权益下单
             </button>
             <button className="admin-outline" type="button">
@@ -449,44 +418,161 @@ export function ApprovalListPage() {
         </div>
         {rows.length === 0 ? <div className="empty-panel">当前分类下暂无审批记录</div> : null}
       </div>
-
-      {picker ? (
-        <div className="admin-mask" onClick={() => setPicker(false)}>
-          <div className="admin-modal pick-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="pick-head">
-              <h2>选择商品</h2>
-              <button className="pick-close" type="button" onClick={() => setPicker(false)} aria-label="关闭">
-                ×
-              </button>
-            </div>
-            <KindPicker kind={pickKind} onKind={setPickKind} />
-            <div className="modal-actions">
-              <button className="admin-ghost" type="button" onClick={() => setPicker(false)}>
-                取消
-              </button>
-              <button className="admin-primary" type="button" onClick={openBuy}>
-                下一步
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   )
 }
 
-export function ApprovalBuyPage() {
-  const { go, approvalDraft, setApprovalDraft } = useAdmin()
-  const record = approvalDraft ? approvalById(approvalDraft.recordId) : undefined
-  const [kind, setKind] = useState<PurchaseKind>(approvalDraft?.kind ?? 'dedicated')
-  const [productId, setProductId] = useState(approvalDraft?.productId ?? DEDICATED_SKUS[0]?.id ?? 'gold')
-  const [equityOpen, setEquityOpen] = useState(false)
-  const [dedicatedPct, setDedicatedPct] = useState(() =>
-    approvalDraft?.kind === 'general'
-      ? FEE_PCT
-      : Math.round((approvalDraft?.merchantFeeRate ?? FEE_RATE) * 100),
-  )
+const BUY_STEPS = ['采购类型', '选择商品', '付款']
 
+function BuySteps({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <ol className={`buy-steps is-${step}`} aria-label="采购进度">
+      {BUY_STEPS.map((label, index) => {
+        const current = index + 1
+        return (
+          <li key={label} className={step === current ? 'on' : step > current ? 'done' : ''}>
+            <span className="buy-step-dot">{current}</span>
+            <span className="buy-step-label">{label}</span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function PayGoods({ name, skuId, amount }: { name: string; skuId?: string; amount: string }) {
+  return (
+    <div className="pay-goods">
+      {skuId ? <ProductIcon id={skuId} /> : <div className="points-mark sm">积</div>}
+      <div>
+        <strong>{name}</strong>
+        <p>商品编号 PO-POINTS-001 · 批量发放</p>
+      </div>
+      <b>¥ {amount}</b>
+    </div>
+  )
+}
+
+function FeeChangeDialog({ onAgree, onRefuse }: { onAgree: () => void; onRefuse: () => void }) {
+  return (
+    <div className="admin-mask" role="presentation">
+      <div className="admin-modal fee-change-modal" role="dialog" aria-modal="true" aria-labelledby="fee-change-title" onClick={(event) => event.stopPropagation()}>
+        <div className="fee-change-head">
+          <span className="fee-change-tag">重要提示</span>
+          <h2 id="fee-change-title">服务费变更确认</h2>
+        </div>
+        <p className="fee-change-ask">
+          本次下单适用的服务费费率已由 <em>7%</em> 调整为 <em>8%</em>，请确认是否同意上述变更。
+        </p>
+        <p className="fee-change-note">如不同意本次变更，订单将无法提交。</p>
+        <div className="modal-actions">
+          <button className="admin-ghost" type="button" onClick={onRefuse}>
+            不同意
+          </button>
+          <button className="admin-primary" type="button" onClick={onAgree}>
+            同意变更
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PayStage({
+  paid,
+  paying,
+  ticketNo,
+  payName,
+  skuId,
+  people,
+  cost,
+  feeRate,
+  merchantFee,
+  userRate,
+  userFee,
+  due,
+  balance,
+  rows,
+  onBack,
+  onPay,
+  onDone,
+}: {
+  paid: boolean
+  paying: boolean
+  ticketNo: string
+  payName: string
+  skuId?: string
+  people: number
+  cost: string
+  feeRate: string
+  merchantFee: string
+  userRate: string
+  userFee: string
+  due: string
+  balance: string
+  rows: ImportRow[]
+  onBack: () => void
+  onPay: () => void
+  onDone: () => void
+}) {
+  const actions = paid ? (
+    <button className="admin-primary" type="button" onClick={onDone}>
+      返回审批记录
+    </button>
+  ) : (
+    <>
+      <button className="admin-ghost" type="button" onClick={onBack}>
+        上一步
+      </button>
+      <button className="admin-primary" disabled={paying} type="button" onClick={onPay}>
+        确认支付 ¥ {due}
+      </button>
+    </>
+  )
+  const lines = [
+    ['账户余额', `¥ ${balance}`],
+    ['商品金额', `¥ ${cost}`],
+    [`商户服务费 ${feeRate}`, `¥ ${merchantFee}`],
+    [`用户承担 ${userRate}`, `¥ ${userFee}`],
+  ]
+  return (
+    <section className="pay-look is-sheet">
+      <PayGoods name={payName} skuId={skuId} amount={cost} />
+      <div className="pay-meta">
+        <span>订单号 {ticketNo}</span>
+        <span>发放 {people} 人</span>
+        <AccountViewButton rows={rows} />
+        <span>服务费率 {feeRate}</span>
+      </div>
+      <div className="pay-sheet-bar">
+        {lines.map(([label, value]) => (
+          <div key={label}>
+            <span>{label}</span>
+            <b>{value}</b>
+          </div>
+        ))}
+        <div className="pay-due">
+          <span>应付金额</span>
+          <strong>¥ {due}</strong>
+          <div className="pay-actions">{actions}</div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function ApprovalBuyPage() {
+  const { go, approvalDraft, setApprovalDraft, createOrder, orders } = useAdmin()
+  const record = approvalDraft ? approvalById(approvalDraft.recordId) : undefined
+  const coinsOnly = isCommissionScene(record?.l2)
+  const resumed = Boolean(approvalDraft?.ticketNo)
+  const [step, setStep] = useState<1 | 2 | 3>(resumed ? 3 : coinsOnly ? 2 : 1)
+  const [kind, setKind] = useState<PurchaseKind | null>(resumed ? (approvalDraft?.kind ?? null) : coinsOnly ? 'dedicated' : null)
+  const [productId, setProductId] = useState<string | null>(
+    resumed ? (approvalDraft?.kind === 'general' ? 'general' : (approvalDraft?.productId ?? null)) : null,
+  )
+  const [paying, setPaying] = useState(false)
+  const [feeAsk, setFeeAsk] = useState(false)
   if (!approvalDraft || !record) {
     return (
       <>
@@ -504,25 +590,48 @@ export function ApprovalBuyPage() {
   }
 
   const rows = approvalDraft.rows
-  const feePct = feePctFor(kind)
-  const merchantPct = kind === 'general' ? GENERAL_FEE_PCT : dedicatedPct
-  const merchantFeeRate = merchantPct / 100
-  const plan = planFromRows(rows)
-  const costAmount = plan.costAmount
-  const q = quote(costAmount, merchantFeeRate, feeRateFor(kind))
-  const sku = DEDICATED_SKUS.find((item) => item.id === productId)
-  const canSubmit = plan.rows.length > 0 && costAmount > 0 && !approvalDraft.paid
 
-  const toCashier = () => {
+  const chooseKind = (next: PurchaseKind) => {
+    if (next !== kind) setProductId(null)
+    setKind(next)
+    setStep(2)
+  }
+
+  const placeOrder = (id: string) => {
+    if (!kind) return
+    if (coinsOnly && id !== 'gold-wechat' && id !== 'gold-alipay') return
+    setProductId(id)
     setApprovalDraft({
       ...approvalDraft,
       kind,
-      productId: kind === 'dedicated' ? productId : undefined,
-      merchantFeeRate,
+      productId: kind === 'dedicated' ? id : undefined,
+      merchantFeeRate: kind === 'general' ? GENERAL_FEE_RATE : FEE_RATE,
       rows,
       ticketNo: approvalDraft.ticketNo ?? `2026${Date.now().toString().slice(-12)}`,
     })
-    go('approval-pay')
+    setStep(3)
+  }
+
+  const payPlan = planFromRows(approvalDraft.rows)
+  const payQuote = quote(payPlan.costAmount, approvalDraft.merchantFeeRate, feeRateFor(approvalDraft.kind))
+  const paySku = approvalDraft.productId ? skuById(approvalDraft.productId) : undefined
+  const payName =
+    approvalDraft.kind === 'general' ? '通用积分' : (purchaseGoodName(approvalDraft.productId) ?? dedicatedLabel(paySku?.name))
+  const paidOrder = approvalDraft.orderId ? orders.find((item) => item.id === approvalDraft.orderId) : undefined
+  const paid = approvalDraft.paid
+  const ticketNo = paidOrder?.id ?? approvalDraft.ticketNo ?? record.approvalNo
+
+  const pay = () => {
+    if (paid || paying || !approvalDraft.ticketNo) return
+    setPaying(true)
+    createOrder({
+      kind: approvalDraft.kind,
+      productId: approvalDraft.productId,
+      costAmount: payPlan.costAmount,
+      merchantFeeRate: approvalDraft.merchantFeeRate,
+      grants: payPlan.rows,
+      source: 'approval',
+    })
   }
 
   return (
@@ -533,142 +642,97 @@ export function ApprovalBuyPage() {
         </button>
         <span> / 采购积分</span>
       </div>
-      <div className="admin-panel">
-        <div className="buy-hero">
-          <BuyPreview kind={kind} sku={sku} />
-          <div className="buy-form">
-            <h1>会员积分</h1>
-            <p className="sku-no">
-              来自审批单 {record.approvalNo} · {record.chainName}
-            </p>
-            <div className="price-box">
-              <div className="price-row">
-                商品价格
-                <strong>¥ {money(UNIT_PRICE)}</strong>
-              </div>
-              <div className="fee-line">
-                单价 · 1 份 = 1 元
-                <span>
-                  {kind === 'general'
-                    ? `手续费率 ${GENERAL_FEE_PCT}.00% · 全部商户承担 · 不可调整`
-                    : `手续费率 ${FEE_PCT}.00%`}
-                </span>
-              </div>
+      <div className="admin-panel is-buy">
+        {step === 3 ? (
+          <div className="buy-pay">
+            <div className="buy-pay-head">
+              <h1>会员积分</h1>
+              <p className="sku-no">
+                来自审批单 {record.approvalNo} · {record.chainName}
+              </p>
+              <BuySteps step={step} />
             </div>
-
-            <div className="field">
-              <span>采购类型</span>
-              <div className="seg">
-                <button type="button" className={kind === 'dedicated' ? 'on' : ''} onClick={() => setKind('dedicated')}>
-                  专用券
-                </button>
-                <button type="button" className={kind === 'general' ? 'on' : ''} onClick={() => setKind('general')}>
-                  通用积分
-                </button>
-              </div>
-              {kind === 'general' ? <em>用户可直接用积分兑换积分专区商品</em> : null}
+            <div className={paid ? 'pay-banner is-ok' : 'pay-banner'}>
+              {paid ? '支付成功，权益已发放至审批用户，打开用户端即可兑换使用。' : '订单已生成，请确认信息并完成付款。'}
             </div>
+            <PayStage
+              paid={paid}
+              paying={paying}
+              ticketNo={ticketNo}
+              payName={payName}
+              skuId={paySku?.id}
+              people={payPlan.rows.length}
+              cost={money(payPlan.costAmount)}
+              feeRate={`${(approvalDraft.merchantFeeRate * 100).toFixed(2)}%`}
+              merchantFee={money(payQuote.merchantFeeAmount)}
+              userRate={`${(payQuote.userFeeRate * 100).toFixed(0)}%`}
+              userFee={money(payQuote.userFeeAmount)}
+              due={money(payQuote.merchantPay)}
+              balance={money(ACCOUNT_BALANCE)}
+              rows={approvalDraft.rows}
+              onBack={() => setStep(2)}
+              onPay={() => {
+                if (!paid && !paying) setFeeAsk(true)
+              }}
+              onDone={() => go('approval')}
+            />
+          </div>
+        ) : (
+          <div className="buy-hero">
+            <div className="buy-form">
+              <h1>会员积分</h1>
+              <p className="sku-no">
+                来自审批单 {record.approvalNo} · {record.chainName}
+              </p>
+              <BuySteps step={step} />
 
-            {kind === 'dedicated' ? (
-              <div className="field">
-                <span>绑定商品</span>
-                <div className="bound-sku">
-                  {sku ? <ProductIcon id={sku.id} /> : null}
-                  <div>
-                    <strong>{dedicatedLabel(sku?.name)}</strong>
-                    <em>一次只能绑定一种专用券</em>
-                  </div>
-                  <button className="account-btn" type="button" onClick={() => setEquityOpen(true)}>
-                    选择商品
+              {step === 1 ? (
+                <div className="field is-choices">
+                  <span>选择采购类型</span>
+                  <KindPicker plain kind={kind} onKind={chooseKind} />
+                </div>
+              ) : null}
+
+              {step === 2 && kind === 'dedicated' ? (
+                <div className="field">
+                  <span>选择商品</span>
+                  <em>点击商品即下单</em>
+                  <EquityPicker coinsOnly={coinsOnly} value={productId ?? ''} onSelect={placeOrder} />
+                </div>
+              ) : null}
+
+              {step === 2 && kind === 'general' ? (
+                <div className="field">
+                  <span>选择商品</span>
+                  <em>点击商品即下单</em>
+                  <GeneralPointsCard selected={productId === 'general'} onSelect={() => placeOrder('general')} />
+                </div>
+              ) : null}
+
+              <div className="issue-actions">
+                {step === 1 || coinsOnly ? (
+                  <button className="admin-ghost" type="button" onClick={() => go('approval')}>
+                    返回
                   </button>
-                </div>
+                ) : (
+                  <button className="admin-ghost" type="button" onClick={() => setStep(1)}>
+                    上一步
+                  </button>
+                )}
               </div>
-            ) : null}
-
-            {equityOpen ? (
-              <EquityPicker
-                value={productId}
-                onSelect={(id) => {
-                  setProductId(id)
-                  setEquityOpen(false)
-                }}
-                onClose={() => setEquityOpen(false)}
-              />
-            ) : null}
-
-            <div className="field">
-              <span>账号信息</span>
-              <em>由审批单带入，共 {plan.rows.length} 人</em>
-              <AccountViewButton rows={rows} />
-            </div>
-
-            <div className="calc-box">
-              <div>
-                <span>审批用户</span>
-                <b>{plan.rows.length} 人</b>
-              </div>
-              <div>
-                <span>{kind === 'dedicated' ? '需发放专用券' : '需采购积分'}</span>
-                <b>
-                  {plan.units} {kind === 'dedicated' ? `份${dedicatedLabel(sku?.name)}` : '分'}
-                </b>
-              </div>
-              <div>
-                <span>采购金额</span>
-                <b>¥ {money(costAmount)}</b>
-              </div>
-            </div>
-
-            <label className="field">
-              <span>手续费拆分</span>
-              {kind === 'general' ? (
-                <em>
-                  {costAmount > 0
-                    ? `按本次采购金额 ¥${money(costAmount)} 计，固定 ${GENERAL_FEE_PCT}%，全部由商户承担，不可调整。`
-                    : `通用积分固定 ${GENERAL_FEE_PCT}%，全部由商户承担，不可调整。`}
-                </em>
-              ) : (
-                <em>
-                  {costAmount > 0
-                    ? `按本次采购金额 ¥${money(costAmount)} 计算 ${FEE_PCT}% 如何分配`
-                    : `按审批名单金额计算 ${FEE_PCT}% 如何分配`}
-                </em>
-              )}
-              <FeeSplitBar
-                feePct={feePct}
-                merchantPct={merchantPct}
-                locked={kind === 'general'}
-                disabled={approvalDraft.paid}
-                onChange={kind === 'dedicated' ? setDedicatedPct : undefined}
-              />
-            </label>
-
-            {costAmount > 0 ? (
-              <div className="split-preview">
-                <div>
-                  <span>商户应付</span>
-                  <b>¥ {money(q.merchantPay)}</b>
-                </div>
-                <div>
-                  <span>用户兑换时扣除</span>
-                  <b>¥ {money(q.userFeeAmount)}</b>
-                </div>
-              </div>
-            ) : (
-              <div className="calc-box is-empty">按审批名单金额计算商户应付与用户扣除</div>
-            )}
-
-            <div className="issue-actions">
-              <button className="admin-ghost" type="button" onClick={() => go('approval')}>
-                返回
-              </button>
-              <button className="admin-primary" disabled={!canSubmit} type="button" onClick={toCashier}>
-                去收银台
-              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
+      {feeAsk ? (
+        <FeeChangeDialog
+          onRefuse={() => setFeeAsk(false)}
+          onAgree={() => {
+            setFeeAsk(false)
+            pay()
+          }}
+        />
+      ) : null}
     </>
   )
 }
@@ -677,6 +741,7 @@ export function ApprovalPayPage() {
   const { go, approvalDraft, createOrder, orders } = useAdmin()
   const record = approvalDraft ? approvalById(approvalDraft.recordId) : undefined
   const [paying, setPaying] = useState(false)
+  const [feeAsk, setFeeAsk] = useState(false)
 
   if (!approvalDraft || !record) {
     return (
@@ -696,8 +761,9 @@ export function ApprovalPayPage() {
 
   const plan = planFromRows(approvalDraft.rows)
   const q = quote(plan.costAmount, approvalDraft.merchantFeeRate, feeRateFor(approvalDraft.kind))
-  const sku = approvalDraft.productId ? DEDICATED_SKUS.find((item) => item.id === approvalDraft.productId) : undefined
-  const productName = approvalDraft.kind === 'general' ? '通用积分' : dedicatedLabel(sku?.name)
+  const sku = approvalDraft.productId ? skuById(approvalDraft.productId) : undefined
+  const productName =
+    approvalDraft.kind === 'general' ? '通用积分' : (purchaseGoodName(approvalDraft.productId) ?? dedicatedLabel(sku?.name))
   const paidOrder = approvalDraft.orderId ? orders.find((item) => item.id === approvalDraft.orderId) : undefined
   const paid = approvalDraft.paid
   const ticketNo = paidOrder?.id ?? approvalDraft.ticketNo ?? record.approvalNo
@@ -735,7 +801,7 @@ export function ApprovalPayPage() {
               <tr>
                 <th>商品信息</th>
                 <th>账号信息</th>
-                <th>手续费率</th>
+                <th>服务费率</th>
               </tr>
             </thead>
             <tbody>
@@ -771,7 +837,7 @@ export function ApprovalPayPage() {
               <dd>¥ {money(plan.costAmount)}</dd>
             </div>
             <div>
-              <dt>商户手续费 {(approvalDraft.merchantFeeRate * 100).toFixed(0)}%</dt>
+              <dt>商户服务费 {(approvalDraft.merchantFeeRate * 100).toFixed(0)}%</dt>
               <dd>¥ {money(q.merchantFeeAmount)}</dd>
             </div>
             <div>
@@ -794,7 +860,14 @@ export function ApprovalPayPage() {
                 <button className="admin-ghost" type="button" onClick={() => go('approval-buy')}>
                   返回修改
                 </button>
-                <button className="admin-primary" disabled={paying} type="button" onClick={pay}>
+                <button
+                  className="admin-primary"
+                  disabled={paying}
+                  type="button"
+                  onClick={() => {
+                    if (!paid && !paying) setFeeAsk(true)
+                  }}
+                >
                   确认支付 ¥ {money(q.merchantPay)}
                 </button>
               </>
@@ -802,6 +875,15 @@ export function ApprovalPayPage() {
           </div>
         </div>
       </div>
+      {feeAsk ? (
+        <FeeChangeDialog
+          onRefuse={() => setFeeAsk(false)}
+          onAgree={() => {
+            setFeeAsk(false)
+            pay()
+          }}
+        />
+      ) : null}
     </>
   )
 }

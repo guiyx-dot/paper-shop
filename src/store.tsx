@@ -11,8 +11,8 @@ export const COUPON_PRODUCT_IDS = ['alipay', 'alipay-plus', 'wechat'] as const
 
 function loadHomeLayout(): HomeLayout {
   const raw = sessionStorage.getItem(HOME_LAYOUT_KEY)
-  if (raw === 'flat' || raw === 'labor') return raw
-  return 'zones'
+  if (raw === 'labor') return raw
+  return 'flat'
 }
 
 type Persisted = {
@@ -65,6 +65,46 @@ function seedBenefitQuotas() {
     if (product.zone === 'benefit') quotas[product.id] = product.quota ?? 0
   }
   return quotas
+}
+
+function applyClaim(data: Persisted): Persisted {
+  const pending = data.grants.filter((item) => !item.claimed)
+  if (pending.length === 0) return { ...data, hasEverClaimed: true }
+  const amount = pending.reduce((sum, item) => sum + item.amount, 0)
+  const title = pending.length > 1 ? `会员积分领取（${pending.length} 笔合并）` : pending[0].title
+  const nextGrants = data.grants.map((item) => (item.claimed ? item : { ...item, claimed: true }))
+  const nextQuotas = { ...data.quotas }
+  let userFeeRate = data.userFeeRate
+  const hasLegacy = pending.some((grant) => !grant.kind)
+  const hasMerchant = pending.some((grant) => grant.kind === 'general' || grant.kind === 'dedicated')
+  if (hasLegacy && !data.hasEverClaimed) {
+    const seed = seedBenefitQuotas()
+    for (const id of Object.keys(seed)) nextQuotas[id] = (nextQuotas[id] ?? 0) + seed[id]
+  }
+  for (const grant of pending) {
+    userFeeRate = Math.max(userFeeRate, grant.userFeeRate ?? 0)
+    if (grant.kind === 'dedicated' && grant.productId) {
+      const product = PRODUCTS.find((item) => item.id === grant.productId)
+      const unit = product?.cost ?? 100
+      nextQuotas[grant.productId] = (nextQuotas[grant.productId] ?? 0) + Math.max(0, Math.floor(grant.amount / unit))
+    }
+  }
+  const addFollowUp = !data.followUpIssued && !hasMerchant
+  return {
+    ...data,
+    grants: addFollowUp ? [...nextGrants, { ...FOLLOW_UP_GRANT }] : nextGrants,
+    points: data.points + amount,
+    quotas: nextQuotas,
+    userFeeRate,
+    ledger: [{ id: `L${Date.now()}`, type: 'claim', title, amount, time: formatTime() }, ...data.ledger],
+    hasEverClaimed: true,
+    followUpIssued: data.followUpIssued || addFollowUp || hasMerchant,
+  }
+}
+
+function openMall(data: Persisted): Persisted {
+  if (data.hasEverClaimed) return data
+  return applyClaim(data)
 }
 
 function emptyState(): Persisted {
@@ -200,7 +240,7 @@ function debitCoupon(coupons: CouponHold[], productId: string, amount: number) {
 function loadState(): Persisted {
   try {
     const raw = sessionStorage.getItem(CONSUMER_KEY) ?? sessionStorage.getItem('points-mall-demo-v2')
-    if (!raw) return emptyState()
+    if (!raw) return openAndSave(emptyState())
     const parsed = JSON.parse(raw) as Partial<Persisted> & { voucherValue?: number; voucherLabel?: string }
     const next: Persisted = {
       ...emptyState(),
@@ -235,10 +275,17 @@ function loadState(): Persisted {
         ]
       }
     }
-    return next
+    return openAndSave(next)
   } catch {
-    return emptyState()
+    return openAndSave(emptyState())
   }
+}
+
+function openAndSave(data: Persisted): Persisted {
+  if (data.hasEverClaimed) return data
+  const opened = openMall(data)
+  sessionStorage.setItem(CONSUMER_KEY, JSON.stringify(opened))
+  return opened
 }
 
 type Unavailable = { label: string; hint: string } | null
@@ -265,13 +312,18 @@ const StoreContext = createContext<Store | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Persisted>(loadState)
-  const [screen, setScreen] = useState<Screen>(loadState().hasEverClaimed ? { name: 'mall' } : { name: 'claim' })
+  const [screen, setScreen] = useState<Screen>({ name: 'mall' })
   const [homeLayout, setHomeLayoutState] = useState<HomeLayout>(loadHomeLayout)
 
   useEffect(() => {
     const sync = () => setData(loadState())
     window.addEventListener('points-mall-sync', sync)
     return () => window.removeEventListener('points-mall-sync', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!data.hasEverClaimed) persist(openMall(data))
+    if (screen.name === 'claim') setScreen({ name: 'mall' })
   }, [])
 
   const persist = (next: Persisted) => {
@@ -285,8 +337,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const generalPoints = Math.max(0, data.points - benefitLocked(data.quotas))
 
   const go = (next: Screen) => {
-    if (!data.hasEverClaimed && next.name !== 'claim') {
-      setScreen({ name: 'claim' })
+    if (next.name === 'claim') {
+      setScreen({ name: 'mall' })
       return
     }
     setScreen(next)
@@ -303,40 +355,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const claimPending = () => {
     if (pendingCount === 0) return
-    const amount = pendingAmount
-    const title = pendingCount > 1 ? `会员积分领取（${pendingCount} 笔合并）` : pending[0].title
-    const nextGrants = data.grants.map((item) => (item.claimed ? item : { ...item, claimed: true }))
-    const nextQuotas = { ...data.quotas }
-    let userFeeRate = data.userFeeRate
-    const hasLegacy = pending.some((grant) => !grant.kind)
-    const hasMerchant = pending.some((grant) => grant.kind === 'general' || grant.kind === 'dedicated')
-    if (hasLegacy && !data.hasEverClaimed) {
-      const seed = seedBenefitQuotas()
-      for (const id of Object.keys(seed)) nextQuotas[id] = (nextQuotas[id] ?? 0) + seed[id]
-    }
-    for (const grant of pending) {
-      userFeeRate = Math.max(userFeeRate, grant.userFeeRate ?? 0)
-      if (grant.kind === 'dedicated' && grant.productId) {
-        const product = PRODUCTS.find((item) => item.id === grant.productId)
-        const unit = product?.cost ?? 100
-        nextQuotas[grant.productId] = (nextQuotas[grant.productId] ?? 0) + Math.max(0, Math.floor(grant.amount / unit))
-      }
-    }
-    const addFollowUp = !data.followUpIssued && !hasMerchant
-    persist({
-      ...data,
-      grants: addFollowUp ? [...nextGrants, { ...FOLLOW_UP_GRANT }] : nextGrants,
-      points: data.points + amount,
-      quotas: nextQuotas,
-      userFeeRate,
-      ledger: [
-        { id: `L${Date.now()}`, type: 'claim', title, amount, time: formatTime() },
-        ...data.ledger,
-      ],
-      hasEverClaimed: true,
-      followUpIssued: data.followUpIssued || addFollowUp || hasMerchant,
-    })
-    setScreen({ name: 'mall' })
+    persist(applyClaim(data))
   }
 
   const unavailable = (product: Product): Unavailable => {
@@ -476,8 +495,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   const reset = () => {
-    persist(emptyState())
-    setScreen({ name: 'claim' })
+    persist(openMall(emptyState()))
+    setScreen({ name: 'mall' })
   }
 
   const value = useMemo<Store>(

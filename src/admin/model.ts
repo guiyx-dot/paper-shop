@@ -13,14 +13,14 @@ export const GOLD_CHANNEL_SKUS: Product[] = goldBase
       {
         ...goldBase,
         id: 'gold-wechat',
-        name: '通用金-微信',
+        name: '通用币-微信',
         channels: ['wechat'],
         description: '每日每人1000/天',
       },
       {
         ...goldBase,
         id: 'gold-alipay',
-        name: '通用金-支付宝',
+        name: '通用币-支付宝',
         channels: ['alipay'],
         description: '每日每人1000/天',
       },
@@ -36,8 +36,22 @@ export const DEDICATED_SKUS = DEDICATED_IDS.map(
 export function dedicatedLabel(name?: string) {
   const base = name?.trim()
   if (!base) return '专用券'
-  if (base.startsWith('通用金-')) return base
+  if (base.startsWith('通用币-') || base.includes('通用币')) return base
   return base.endsWith('专用券') ? base : `${base}专用券`
+}
+
+export const PURCHASE_GOODS: { id: string; name: string; tab: 'coin' | 'coupon' }[] = [
+  { id: 'gold-wechat', name: '微信通用币', tab: 'coin' },
+  { id: 'gold-alipay', name: '支付宝通用币', tab: 'coin' },
+  { id: 'wechat', name: '微信立减金', tab: 'coupon' },
+  { id: 'alipay', name: '支付宝通用券', tab: 'coupon' },
+  { id: 'alipay-plus', name: '支付宝通用券Plus', tab: 'coupon' },
+  { id: 'gift-pack', name: '万佳乐', tab: 'coupon' },
+  { id: 'corp-pay', name: '因公付', tab: 'coupon' },
+]
+
+export function purchaseGoodName(id?: string) {
+  return PURCHASE_GOODS.find((item) => item.id === id)?.name
 }
 
 export type PurchaseKind = 'general' | 'dedicated'
@@ -57,6 +71,12 @@ export type AdminOrder = {
   issuedPoints: number
   status: 'paid'
   createdAt: string
+  ticketNo?: string
+  batchNo?: string
+  merchantId?: string
+  merchantName?: string
+  businessType?: string
+  listStatus?: '待支付' | '充值中' | '发放成功' | '发放失败'
 }
 
 export type IssuedUser = {
@@ -92,6 +112,7 @@ export type AdminScreen =
   | 'mall-category'
   | 'flows'
   | 'shop-orders'
+  | 'purchase-orders'
 
 export function money(n: number) {
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -213,27 +234,11 @@ export type SceneL2 =
 
 export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; label: string }[] }[] = [
   {
-    id: 'new-car',
-    label: '新车场景',
-    children: [
-      { id: 'new-sale', label: '新车销售' },
-      { id: 'new-commission', label: '新车佣金' },
-    ],
-  },
-  {
-    id: 'used-car',
-    label: '二手车场景',
-    children: [
-      { id: 'used-sale', label: '二手车销售' },
-      { id: 'used-commission', label: '二手车佣金' },
-    ],
-  },
-  {
     id: 'accident',
     label: '事故车场景',
     children: [
       { id: 'acc-commission', label: '事故车佣金' },
-      { id: 'acc-repair', label: '维修佣金' },
+      { id: 'acc-repair', label: '维修权益' },
     ],
   },
   {
@@ -241,7 +246,15 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
     label: '会员营销',
     children: [
       { id: 'member-only', label: '会员营销' },
-      { id: 'member-commission', label: '会员营销佣金' },
+      { id: 'member-commission', label: '会员营销权益' },
+    ],
+  },
+  {
+    id: 'new-car',
+    label: '新车场景',
+    children: [
+      { id: 'new-sale', label: '新车销售' },
+      { id: 'new-commission', label: '新车权益' },
     ],
   },
   {
@@ -252,7 +265,30 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
       { id: 'points-redeem', label: '积分兑换' },
     ],
   },
+  {
+    id: 'used-car',
+    label: '二手车场景',
+    children: [
+      { id: 'used-sale', label: '二手车销售' },
+      { id: 'used-commission', label: '二手车权益' },
+    ],
+  },
 ]
+
+export function sceneL2Label(id?: SceneL2) {
+  if (!id) return '其他'
+  for (const group of SCENE_TREE) {
+    const hit = group.children.find((item) => item.id === id)
+    if (hit) return hit.label
+  }
+  return '其他'
+}
+
+const COMMISSION_L2: SceneL2[] = ['acc-commission', 'acc-repair', 'member-commission', 'new-commission', 'used-commission']
+
+export function isCommissionScene(id?: SceneL2) {
+  return Boolean(id && COMMISSION_L2.includes(id))
+}
 
 export type ApprovalRecord = {
   id: string
@@ -402,96 +438,6 @@ export const APPROVAL_RECORDS: ApprovalRecord[] = [
     approvalStatus: '审批通过',
     ownerName: '张*伟',
     ownerPhone: '13800002202',
-    grantAmount: 1,
-  }),
-  rec({
-    id: 'ar14',
-    l1: 'new-car',
-    l2: 'new-sale',
-    batchNo: '2069011288076064908',
-    approvalNo: '010162320100',
-    chainName: '产研验证商户演示新车销售提报',
-    applicant: '灵犀小二075',
-    submittedAt: '2026-06-11 09:26:41',
-    handler: '清风',
-    handlerPhone: '18357186730',
-    voucherCount: 1,
-    handledAt: '2026-06-11 09:40:02',
-    approvalStatus: '审批通过',
-    ownerName: '李*敏',
-    ownerPhone: '18600003303',
-    grantAmount: 1,
-  }),
-  rec({
-    id: 'ar15',
-    l1: 'new-car',
-    l2: 'new-sale',
-    batchNo: '2069124408076065012',
-    approvalNo: '010162320101',
-    chainName: '产研验证商户演示新车销售提报',
-    applicant: '灵犀小二023',
-    submittedAt: '2026-06-25 10:18:33',
-    handler: 'lingzhen',
-    handlerPhone: '13988945620',
-    voucherCount: 0,
-    handledAt: '2026-06-25 10:20:05',
-    approvalStatus: '审批中',
-    ownerName: '王*强',
-    ownerPhone: '13700004404',
-    grantAmount: 1,
-  }),
-  rec({
-    id: 'ar16',
-    l1: 'new-car',
-    l2: 'new-sale',
-    batchNo: '2069182208076065020',
-    approvalNo: '010162320102',
-    chainName: '产研验证商户演示新车销售提报',
-    applicant: '灵犀小二084',
-    submittedAt: '2026-06-26 15:42:09',
-    handler: '清风',
-    handlerPhone: '18357186730',
-    voucherCount: 0,
-    handledAt: '2026-06-26 15:42:09',
-    approvalStatus: '待审批',
-    ownerName: '桂*徽',
-    ownerPhone: '19911011101',
-    grantAmount: 1,
-  }),
-  rec({
-    id: 'ar17',
-    l1: 'new-car',
-    l2: 'new-sale',
-    batchNo: '2068801108076064888',
-    approvalNo: '010162320103',
-    chainName: '产研验证商户演示新车销售提报',
-    applicant: '灵犀小二001',
-    submittedAt: '2026-06-08 17:05:22',
-    handler: 'lingzhen',
-    handlerPhone: '13988945620',
-    voucherCount: 2,
-    handledAt: '2026-06-08 18:11:36',
-    approvalStatus: '审批驳回',
-    ownerName: '陈*信',
-    ownerPhone: '18357186730',
-    grantAmount: 1,
-  }),
-  rec({
-    id: 'ar18',
-    l1: 'new-car',
-    l2: 'new-sale',
-    batchNo: '2068553308076064777',
-    approvalNo: '010162320104',
-    chainName: '产研验证商户演示新车销售提报',
-    applicant: '灵犀小二075',
-    submittedAt: '2026-05-29 13:16:48',
-    handler: '清风',
-    handlerPhone: '18357186730',
-    voucherCount: 0,
-    handledAt: '2026-05-29 13:28:10',
-    approvalStatus: '审批通过',
-    ownerName: '王*强',
-    ownerPhone: '13700004404',
     grantAmount: 1,
   }),
   rec({

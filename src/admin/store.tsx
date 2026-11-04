@@ -8,7 +8,10 @@ import {
   quote,
   skuById,
   dedicatedLabel,
+  purchaseGoodName,
   feeRateFor,
+  sceneL2Label,
+  approvalById,
   type AdminOrder,
   type AdminScreen,
   type ApprovalDraft,
@@ -139,15 +142,21 @@ export function AdminProvider({
     if (next === 'issue') setIssueOrderId(orderId)
   }
 
+function placedAt(date = new Date()) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
   const createOrder: AdminStore['createOrder'] = (input) => {
     const product = input.productId ? skuById(input.productId) : undefined
     const q = quote(input.costAmount, input.merchantFeeRate, feeRateFor(input.kind))
+    const record = input.source === 'approval' && approvalDraft ? approvalById(approvalDraft.recordId) : undefined
     const order: AdminOrder = {
       id: `PO${Date.now().toString().slice(-10)}`,
       source: input.source ?? 'catalog',
       kind: input.kind,
       productId: input.productId,
-      productName: input.kind === 'general' ? '通用积分' : dedicatedLabel(product?.name),
+      productName: input.kind === 'general' ? '通用积分' : (purchaseGoodName(input.productId) ?? dedicatedLabel(product?.name)),
       costAmount: input.costAmount,
       pointsTotal: input.costAmount,
       merchantFeeRate: q.merchantFeeRate,
@@ -156,7 +165,13 @@ export function AdminProvider({
       userFeeAmount: q.userFeeAmount,
       issuedPoints: 0,
       status: 'paid',
-      createdAt: formatTime(),
+      createdAt: input.source === 'approval' ? placedAt() : formatTime(),
+      ticketNo: input.source === 'approval' ? approvalDraft?.ticketNo : undefined,
+      batchNo: record?.batchNo,
+      merchantId: record ? '03000000001' : undefined,
+      merchantName: record?.merchant,
+      businessType: record ? sceneL2Label(record.l2) : undefined,
+      listStatus: input.source === 'approval' ? '发放成功' : undefined,
     }
     const orders = [order, ...data.orders]
     if (input.grants && input.grants.length > 0) {
@@ -165,7 +180,7 @@ export function AdminProvider({
       if (!isolated) pushConsumerGrants(applied.rows)
       if (input.source === 'approval') {
         setApprovalDraft((prev) => (prev ? { ...prev, paid: true, orderId: order.id } : prev))
-        setScreen('approval-pay')
+        setScreen('purchase-orders')
         return order
       }
       setIssueOrderId(order.id)
@@ -173,6 +188,11 @@ export function AdminProvider({
       return order
     }
     persist({ ...data, orders })
+    if (input.source === 'approval') {
+      setApprovalDraft((prev) => (prev ? { ...prev, paid: true, orderId: order.id } : prev))
+      setScreen('purchase-orders')
+      return order
+    }
     setIssueOrderId(order.id)
     setScreen('issue')
     return order

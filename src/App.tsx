@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreProvider, useStore } from './store'
-import { BenefitChannelPage, BenefitZonePage, ClaimPage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar } from './pages'
+import { BenefitChannelPage, BenefitZonePage, CorpPayPage, DetailPage, GiftPackPage, GoldWalletPage, LaborExtractPage, MallPage, MinePage, PointsZonePage, RecordsPage, RightsPage, SuccessPage, TabBar } from './pages'
 import { ZcbMemberPage } from './zcb-pages'
 import { ShopDetailPage, ShopPointsPage, ShopShelfPage } from './shop-pages'
 import AdminApp from './admin/AdminApp'
@@ -23,9 +23,7 @@ function useConsole() {
 }
 
 function Screen() {
-  const { screen, hasEverClaimed } = useStore()
-  if (!hasEverClaimed) return <ClaimPage />
-  if (screen.name === 'claim') return <ClaimPage />
+  const { screen } = useStore()
   if (screen.name === 'detail') return <DetailPage productId={screen.productId} channel={screen.channel} from={screen.from} />
   if (screen.name === 'success') return <SuccessPage orderId={screen.orderId} from={screen.from} />
   if (screen.name === 'corp-pay') return <CorpPayPage fromOrderId={screen.fromOrderId} />
@@ -44,8 +42,8 @@ function Screen() {
 }
 
 function PhoneShell() {
-  const { screen, hasEverClaimed } = useStore()
-  const showTab = hasEverClaimed && (screen.name === 'mall' || screen.name === 'mine')
+  const { screen } = useStore()
+  const showTab = screen.name === 'mall' || screen.name === 'mine'
   return (
     <>
       <div className="phone-body">
@@ -57,13 +55,17 @@ function PhoneShell() {
 }
 
 const LAYOUTS: { id: HomeLayout; label: string }[] = [
-  { id: 'zones', label: '积分商城1期' },
-  { id: 'flat', label: '积分商城2期' },
+  { id: 'flat', label: '积分商城' },
   { id: 'labor', label: '连续劳务区分' },
 ]
 
+function shownLayout(layout: HomeLayout): HomeLayout {
+  return layout === 'zones' ? 'flat' : layout
+}
+
 function StageChrome() {
   const { homeLayout, setHomeLayout } = useStore()
+  const current = shownLayout(homeLayout)
   return (
     <div className="stage-tools">
       <div className="stage-entries">
@@ -79,7 +81,7 @@ function StageChrome() {
           <button
             key={item.id}
             type="button"
-            className={homeLayout === item.id ? 'on' : ''}
+            className={current === item.id ? 'on' : ''}
             onClick={() => setHomeLayout(item.id)}
           >
             {item.label}
@@ -103,7 +105,8 @@ function LaborExtractPhone() {
 
 function DemoStage() {
   const { homeLayout } = useStore()
-  if (homeLayout === 'zones') {
+  const current = shownLayout(homeLayout)
+  if (current === 'zones') {
     return (
       <div className="stage is-pair">
         <StageChrome />
@@ -126,7 +129,7 @@ function DemoStage() {
       </div>
     )
   }
-  if (homeLayout === 'labor') {
+  if (current === 'labor') {
     return (
       <div className="stage is-single">
         <StageChrome />
