@@ -28,7 +28,12 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { id: 'home', label: '首页', icon: 'home', muted: true },
-  { id: 'goods', label: '商品管理', icon: 'goods', muted: true },
+  {
+    id: 'goods',
+    label: '商品管理',
+    icon: 'goods',
+    children: [{ id: 'goods-orders', label: '商品订单', screen: 'purchase-orders' }],
+  },
   { id: 'activity', label: '活动管理', icon: 'activity', muted: true },
   { id: 'quota', label: '额度管理', icon: 'quota', muted: true },
   { id: 'insure', label: '车险报价管理', icon: 'insure', muted: true },
@@ -42,7 +47,6 @@ const NAV: NavItem[] = [
       { id: 'reporter', label: '提报人审批记录', muted: true },
     ],
   },
-  { id: 'orders', label: '订单管理', icon: 'orders', screen: 'purchase-orders' },
   {
     id: 'data',
     label: '数据中心',
@@ -95,7 +99,7 @@ function currentNavId(screen: string) {
   if (screen === 'redeems') return 'redeems'
   if (screen === 'flows') return 'flows'
   if (screen === 'shop-orders') return 'shop-orders'
-  if (screen === 'purchase-orders') return 'orders'
+  if (screen === 'purchase-orders') return 'goods-orders'
   if (screen === 'mall-home') return 'mall-home'
   if (screen === 'mall-banner') return 'mall-banner'
   if (screen === 'mall-goods') return 'mall-goods'
@@ -141,8 +145,76 @@ function Caret({ open }: { open: boolean }) {
   )
 }
 
+function NoticeArt() {
+  return (
+    <svg className="price-notice-art" viewBox="0 0 210 108" aria-hidden>
+      <rect x="86" y="30" width="52" height="62" rx="6" fill="#d5e8fc" transform="rotate(-8 112 61)" />
+      <path d="M88 46h16M88 54h10" stroke="#b7d4f4" strokeWidth="2.2" strokeLinecap="round" transform="rotate(-8 112 61)" />
+      <rect x="78" y="36" width="108" height="62" rx="7" fill="#8ec5f6" />
+      <path d="M78 36 132 70 186 36" fill="#c5e2fb" />
+      <path d="M78 98 120 66M186 98 144 66" fill="none" stroke="#6eafef" strokeWidth="1.4" />
+      <rect x="118" y="6" width="42" height="26" rx="10" fill="#7ed6e6" />
+      <circle cx="131" cy="19" r="2.2" fill="#fff" />
+      <circle cx="139" cy="19" r="2.2" fill="#fff" />
+      <circle cx="147" cy="19" r="2.2" fill="#fff" />
+      <rect x="162" y="74" width="40" height="24" rx="9" fill="#9ec4f6" />
+      <path d="M172 86h20" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PriceNotice({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="admin-mask" role="presentation">
+      <div className="admin-modal price-notice" role="dialog" aria-modal="true" aria-labelledby="price-notice-title" onClick={(event) => event.stopPropagation()}>
+        <div className="price-notice-head">
+          <div>
+            <h2 id="price-notice-title">商品平台调价通知</h2>
+            <time dateTime="2026-08-04">2026-08-04</time>
+          </div>
+          <NoticeArt />
+          <button className="price-notice-close" type="button" aria-label="关闭" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="price-notice-body">
+          <p>尊敬的客户：</p>
+          <p>
+            受市场环境影响，为保障产品品质及服务交付，灵犀及旗下关联公司已完成产品方案与定价体系优化，对部分数字权益商品价格进行调整。本次调整适用于4S店业务场景下的全部数字权益商品，报价标准如下：
+          </p>
+          <table className="price-notice-table">
+            <thead>
+              <tr>
+                <th>数字权益商品</th>
+                <th>原合作费率</th>
+                <th>调整后费率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>支付宝通用金（营销折让）</td>
+                <td>服务费&lt;8%</td>
+                <td>服务费 8%</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            上述调整自<em>2026年8月15日0点</em>起施行。请同步至内部相关部门，做好业务衔接。如对方案或执行细节有疑问，请联系对接的商务经理。
+          </p>
+        </div>
+        <div className="modal-actions">
+          <button className="admin-primary" type="button" onClick={onClose}>
+            我知道了
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Shell({ place }: { place: 'merchant' | 'mid' }) {
   const { screen, go } = useAdmin()
+  const [priceNotice, setPriceNotice] = useState(place === 'merchant')
   const active = currentNavId(screen)
   const nav = place === 'mid' ? MID_NAV : NAV
   const [opened, setOpened] = useState<string[]>(place === 'mid' ? ['mall', 'mini', 'store'] : ['audit'])
@@ -244,6 +316,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
           ) : null}
         </main>
         {place === 'mid' ? <Phase2Brief dock /> : null}
+        {priceNotice ? <PriceNotice onClose={() => setPriceNotice(false)} /> : null}
       </div>
     </div>
   )

@@ -88,6 +88,7 @@ export function ShopDetailPage({ productId, from }: { productId: string; from?: 
   const product = config.goods.find((item) => item.id === productId)
   const [ask, setAsk] = useState(false)
   const [done, setDone] = useState(false)
+  const [citiesOpen, setCitiesOpen] = useState(false)
   const back = () => {
     if (from && from !== 'mall') go({ name: 'shop-shelf', shelf: from })
     else go({ name: 'mall' })
@@ -132,7 +133,36 @@ export function ShopDetailPage({ productId, from }: { productId: string; from?: 
             <i key={tag}>{tag}</i>
           ))}
         </div>
+        {product.stock != null || product.shipCities?.length ? (
+          <dl className="shop-facts">
+            {product.stock != null ? (
+              <div>
+                <dt>库存</dt>
+                <dd>{product.stock}</dd>
+              </div>
+            ) : null}
+            {product.shipCities?.length ? (
+              <div>
+                <dt>包邮城市</dt>
+                <dd>
+                  <p className={citiesOpen ? 'shop-cities' : 'shop-cities is-fold'}>{product.shipCities.join('、')}</p>
+                  <button className="shop-more" type="button" onClick={() => setCitiesOpen((open) => !open)}>
+                    {citiesOpen ? '收起' : `共${product.shipCities.length}个城市，展开`}
+                  </button>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
         <p className="shop-lead">使用会员积分兑换。提交后可在数字中台的商品订单里查看。</p>
+        {product.detailImages?.length ? (
+          <section className="shop-story">
+            <h3>商品详情</h3>
+            {product.detailImages.map((src) => (
+              <img key={src} src={src} alt="" />
+            ))}
+          </section>
+        ) : null}
       </div>
       <div className="shop-buybar">
         <button className="shop-buy" type="button" onClick={() => setAsk(true)} disabled={!product.onShelf || done}>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlipayCoinArt, AlipayCouponArt, WechatCoinArt, WechatCouponArt } from './alipay-coin-art'
 import { AlipayPlusArt } from './alipay-plus-art'
 import { hasShelfPhoto, ShelfPhoto } from './shelf-photo'
-import { FEE_RATE, GENERAL_FEE_PCT, PURCHASE_GOODS, UNIT_PRICE, money } from './model'
+import { FEE_PCT, GENERAL_FEE_PCT, PURCHASE_GOODS, UNIT_PRICE, money } from './model'
 
 const TABS: { id: 'coin' | 'coupon'; label: string }[] = [
   { id: 'coin', label: '币' },
@@ -53,7 +53,7 @@ export function EquityPicker({
             </span>
             <strong>{item.name}</strong>
             <em>¥ {money(UNIT_PRICE)}</em>
-            <span className="equity-fee">服务费 ¥{money(UNIT_PRICE * FEE_RATE)}</span>
+            <span className="equity-fee">服务费 {FEE_PCT}%</span>
           </button>
         ))}
       </div>

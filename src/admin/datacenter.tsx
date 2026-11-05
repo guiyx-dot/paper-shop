@@ -174,7 +174,7 @@ export function DatacenterPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [toast, setToast] = useState('')
-  const [reissueOnce, setReissueOnce] = useState(false)
+  const [blockTip, setBlockTip] = useState('')
   const [reissueId, setReissueId] = useState<string | null>(null)
   const [reissueReason, setReissueReason] = useState('')
   const [reissueMissing, setReissueMissing] = useState(false)
@@ -253,9 +253,9 @@ export function DatacenterPage() {
 
   const clickRevoke = (row: DetailRow) => {
     const state = revokeState(row)
-    if (state === 'revoked') return showToast('已撤回，不可再撤回')
-    if (state === 'expired') return showToast('已失效，不可撤回')
-    if (state === 'withdrawn') return showToast('用户已提现，不可撤回')
+    if (state === 'revoked') return setBlockTip('已撤回，不可再撤回')
+    if (state === 'expired') return setBlockTip('已失效，不可撤回')
+    if (state === 'withdrawn') return setBlockTip('用户已提现，不可撤回')
     if (state === 'ok') setPendingId(row.id)
   }
 
@@ -456,7 +456,7 @@ export function DatacenterPage() {
                           type="button"
                           onClick={() => {
                             if (row.reissued) {
-                              setReissueOnce(true)
+                              setBlockTip('每条数据只能补发一次。')
                               return
                             }
                             setReissueReason('')
@@ -624,15 +624,15 @@ export function DatacenterPage() {
         </div>
       ) : null}
 
-      {reissueOnce ? (
-        <div className="admin-mask" onClick={() => setReissueOnce(false)}>
-          <div className="admin-modal reissue-once" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+      {blockTip ? (
+        <div className="admin-mask" onClick={() => setBlockTip('')}>
+          <div className="admin-modal reissue-once" role="dialog" aria-modal="true" aria-labelledby="block-tip" onClick={(event) => event.stopPropagation()}>
             <div className="reissue-once-body">
               <i>i</i>
-              <p>每条数据只能补发一次。</p>
+              <p id="block-tip">{blockTip}</p>
             </div>
             <div className="modal-actions">
-              <button className="admin-ghost" type="button" onClick={() => setReissueOnce(false)}>
+              <button className="admin-ghost" type="button" onClick={() => setBlockTip('')}>
                 知道了
               </button>
             </div>

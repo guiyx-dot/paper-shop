@@ -742,6 +742,105 @@
   line-height: 22px;
 }
 
+.price-notice {
+  width: min(680px, calc(100vw - 48px));
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.price-notice-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 108px;
+  padding: 22px 56px 20px 28px;
+  background: linear-gradient(180deg, #eef7ff 0%, #d9eeff 100%);
+}
+
+.price-notice-head h2 {
+  margin: 0;
+  color: #16325c;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+}
+
+.price-notice-head time {
+  display: block;
+  margin-top: 6px;
+  color: #8aa0b8;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.price-notice-art {
+  position: absolute;
+  right: 28px;
+  bottom: 0;
+  width: 210px;
+  height: 108px;
+  pointer-events: none;
+}
+
+.price-notice-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  color: #4e5969;
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.price-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 28px 0;
+}
+
+.price-notice-body p {
+  margin: 0;
+  color: #1d2129;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.price-notice-body em {
+  color: #d4380d;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.price-notice-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.price-notice-table th,
+.price-notice-table td {
+  border: 1px solid #d9dde3;
+  padding: 10px 12px;
+  text-align: center;
+  color: #1d2129;
+}
+
+.price-notice-table th {
+  font-weight: 700;
+  background: #fff;
+}
+
+.price-notice .modal-actions {
+  margin-top: 0;
+  padding: 16px 28px 20px;
+}
+
 .fee-change-modal .modal-actions {
   margin-top: 0;
   padding: 20px 24px 18px;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FRYER_CITIES } from './fryer-cities'
 
 export type ShopGood = {
   id: string
@@ -10,6 +11,9 @@ export type ShopGood = {
   spec?: string
   detail?: string
   image?: string
+  stock?: number
+  shipCities?: string[]
+  detailImages?: string[]
   tags: string[]
   tone: string
   onShelf: boolean
@@ -83,7 +87,20 @@ export const DEFAULT_CATEGORIES: ShopCategory[] = [
 ]
 
 export const DEFAULT_GOODS: ShopGood[] = [
-  good('ejiao', '【张太和】阿胶糕 60g*6盒', '178.18', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[0]),
+  good(
+    'ejiao',
+    '【ASD爱仕达】可视化系列空气炸锅 4.5L',
+    '350.9',
+    {
+      categoryId: 'c-home',
+      spec: '4.5L',
+      tags: ['包邮', '省心购'],
+      image: goodsImg('fryer/main.png'),
+      shipCities: FRYER_CITIES,
+      detailImages: Array.from({ length: 18 }, (_, index) => goodsImg(`fryer/detail-${String(index + 1).padStart(2, '0')}.jpg`)),
+    },
+    tones[0],
+  ),
   good('eye', '【倍轻松】眼部按摩器 EM002', '456.36', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[1]),
   good('paw', '【伟易达】汪汪队立大功救援套装', '198.99', { categoryId: 'c-home', tags: ['包邮', '省心购'] }, tones[2]),
   good('wood', '【乡村振兴】山真美椴木细木耳 200g', '54.99', { categoryId: 'c-food', tags: ['包邮', '省心购'], image: goodsImg('wood.jpg') }, tones[3]),
@@ -195,7 +212,12 @@ export const HOME_BLOCKS = [
 const KEY = 'paper-shop-mall-config-v2'
 
 function cloneGood(item: ShopGood): ShopGood {
-  return { ...item, tags: [...item.tags] }
+  return {
+    ...item,
+    tags: [...item.tags],
+    shipCities: item.shipCities ? [...item.shipCities] : undefined,
+    detailImages: item.detailImages ? [...item.detailImages] : undefined,
+  }
 }
 
 function defaultSlots(): HomeSlot[] {
@@ -269,14 +291,20 @@ function asGood(raw: unknown): ShopGood | null {
   const item = raw as ShopGood
   if (!item.id || !item.name) return null
   const base = DEFAULT_GOODS.find((row) => row.id === item.id)
+  const upgrade = Boolean(base?.detailImages?.length) && !Array.isArray(item.detailImages)
   return {
     ...(base ? cloneGood(base) : { tags: [], onShelf: true, tone: tones[0], categoryId: 'c-home', price: '', id: item.id, name: item.name }),
     ...item,
-    tags: Array.isArray(item.tags) ? item.tags.filter((tag) => typeof tag === 'string') : base?.tags ?? [],
+    ...(upgrade && base ? { name: base.name, price: base.price, spec: base.spec, image: base.image, tags: [...base.tags] } : {}),
+    tags: upgrade && base ? [...base.tags] : Array.isArray(item.tags) ? item.tags.filter((tag) => typeof tag === 'string') : base?.tags ?? [],
     onShelf: item.onShelf !== false,
-    price: typeof item.price === 'string' && item.price.trim() ? item.price : base?.price ?? '',
+    price: upgrade && base ? base.price : typeof item.price === 'string' && item.price.trim() ? item.price : base?.price ?? '',
     categoryId: item.categoryId || base?.categoryId || 'c-home',
-    image: typeof item.image === 'string' ? item.image : base?.image,
+    image: upgrade && base ? base.image : typeof item.image === 'string' && item.image ? item.image : base?.image,
+    spec: upgrade && base ? base.spec : typeof item.spec === 'string' && item.spec ? item.spec : base?.spec,
+    stock: typeof item.stock === 'number' ? item.stock : base?.stock,
+    shipCities: Array.isArray(item.shipCities) ? item.shipCities.filter((city) => typeof city === 'string') : base?.shipCities,
+    detailImages: Array.isArray(item.detailImages) ? item.detailImages.filter((src) => typeof src === 'string') : base?.detailImages,
   }
 }
 
