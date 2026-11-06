@@ -16,6 +16,7 @@ import {
   money,
   planFromRows,
   quote,
+  type ApprovalRecord,
   type ImportRow,
   type PurchaseKind,
   type SceneL1,
@@ -106,6 +107,125 @@ function canPlaceOrder(status: string) {
   return status === '审批通过'
 }
 
+const FIELD_GROUPS = ['审批链基础信息', '审批链业务信息', '领取人信息', '商品订单信息'] as const
+
+const APPROVAL_FIELDS = [
+  { id: 'batchNo', label: '批次号', group: '审批链基础信息' },
+  { id: 'approvalNo', label: '审批单号', group: '审批链基础信息' },
+  { id: 'merchant', label: '商户', group: '审批链基础信息' },
+  { id: 'chainName', label: '审批链名称', group: '审批链基础信息' },
+  { id: 'applicant', label: '审批提报人', group: '审批链基础信息' },
+  { id: 'submittedAt', label: '提报时间', group: '审批链基础信息' },
+  { id: 'handler', label: '经办人', group: '审批链基础信息' },
+  { id: 'handlerPhone', label: '经办人手机号', group: '审批链基础信息' },
+  { id: 'voucher', label: '关联凭证', group: '审批链基础信息' },
+  { id: 'voucherStatus', label: '凭证审核状态', group: '审批链基础信息' },
+  { id: 'handledAt', label: '经办时间', group: '审批链基础信息' },
+  { id: 'clue', label: '关联线索', group: '审批链基础信息' },
+  { id: 'approvalStatus', label: '审批状态', group: '审批链基础信息' },
+  { id: 'orderNo', label: '订单号', group: '审批链业务信息' },
+  { id: 'goodsName', label: '商品名称', group: '审批链业务信息' },
+  { id: 'goodsPrice', label: '商品价格', group: '审批链业务信息' },
+  { id: 'grantAmount', label: '发放金额', group: '审批链业务信息' },
+  { id: 'ownerName', label: '新车主姓名', group: '审批链业务信息' },
+  { id: 'ownerPhone', label: '车主手机号', group: '审批链业务信息' },
+  { id: 'plate', label: '车牌号', group: '审批链业务信息' },
+  { id: 'vin', label: '车架号', group: '审批链业务信息' },
+  { id: 'carPrice', label: '车辆价格', group: '审批链业务信息' },
+  { id: 'outerNo', label: '外部流程号', group: '审批链业务信息' },
+  { id: 'receiverPhone', label: '领取人手机号', group: '领取人信息' },
+  { id: 'receiverName', label: '领取人姓名', group: '领取人信息' },
+  { id: 'receiverIdNo', label: '领取人身份证号', group: '领取人信息' },
+  { id: 'goodsOrderNo', label: '商品订单号', group: '商品订单信息' },
+  { id: 'orderStatus', label: '下单状态', group: '商品订单信息' },
+  { id: 'mainBenefit', label: '主权益', group: '商品订单信息' },
+  { id: 'giftBenefit', label: '赠送权益', group: '商品订单信息' },
+] as const
+
+type ApprovalFieldId = (typeof APPROVAL_FIELDS)[number]['id']
+
+const VISIBLE_FIELD_KEY = 'paper-shop-approval-visible-fields'
+
+function readVisibleFields() {
+  const all = APPROVAL_FIELDS.map((field) => field.id)
+  try {
+    const raw = localStorage.getItem(VISIBLE_FIELD_KEY)
+    if (!raw) return all
+    const saved = JSON.parse(raw) as unknown
+    if (!Array.isArray(saved)) return all
+    const picked = new Set(saved.filter((id): id is ApprovalFieldId => typeof id === 'string' && all.includes(id as ApprovalFieldId)))
+    const next = all.filter((id) => picked.has(id))
+    return next.length ? next : all
+  } catch {
+    return all
+  }
+}
+
+function approvalCell(id: ApprovalFieldId, item: ApprovalRecord) {
+  switch (id) {
+    case 'batchNo':
+      return item.batchNo
+    case 'approvalNo':
+      return item.approvalNo
+    case 'merchant':
+      return item.merchant
+    case 'chainName':
+      return item.chainName
+    case 'applicant':
+      return item.applicant
+    case 'submittedAt':
+      return item.submittedAt
+    case 'handler':
+      return item.handler
+    case 'handlerPhone':
+      return item.handlerPhone
+    case 'voucher':
+      return item.voucherCount > 0 ? `${item.voucherCount}个凭证` : '无凭证'
+    case 'voucherStatus':
+      return <em className={`appr-status is-${statusTone(item.voucherStatus)}`}>{item.voucherStatus}</em>
+    case 'handledAt':
+      return item.handledAt
+    case 'clue':
+      return item.clue
+    case 'approvalStatus':
+      return <em className={`appr-status is-${statusTone(item.approvalStatus)}`}>{item.approvalStatus}</em>
+    case 'orderNo':
+      return item.orderNo
+    case 'goodsName':
+      return item.goodsName
+    case 'goodsPrice':
+      return item.goodsPrice ? yuan(item.goodsPrice) : ''
+    case 'grantAmount':
+      return item.grantAmount ? yuan(item.grantAmount) : ''
+    case 'ownerName':
+      return item.ownerName
+    case 'ownerPhone':
+      return maskPhone(item.ownerPhone)
+    case 'plate':
+      return item.plate
+    case 'vin':
+      return item.vin
+    case 'carPrice':
+      return item.carPrice
+    case 'outerNo':
+      return item.outerNo
+    case 'receiverPhone':
+      return maskPhone(item.receiverPhone)
+    case 'receiverName':
+      return item.receiverName
+    case 'receiverIdNo':
+      return item.receiverIdNo
+    case 'goodsOrderNo':
+      return item.goodsOrderNo
+    case 'orderStatus':
+      return <em className={`appr-status is-${statusTone(item.orderStatus)}`}>{item.orderStatus}</em>
+    case 'mainBenefit':
+      return item.mainBenefit
+    case 'giftBenefit':
+      return item.giftBenefit
+  }
+}
+
 export function ApprovalListPage() {
   const { go, setApprovalDraft } = useAdmin()
   const [l1, setL1] = useState<SceneL1>('new-car')
@@ -115,6 +235,16 @@ export function ApprovalListPage() {
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [blockTip, setBlockTip] = useState('')
+  const [visibleIds, setVisibleIds] = useState<ApprovalFieldId[]>(readVisibleFields)
+  const [columnsOpen, setColumnsOpen] = useState(false)
+  const [draftIds, setDraftIds] = useState<ApprovalFieldId[]>([])
+  const [foldedGroups, setFoldedGroups] = useState<string[]>([])
+  const [columnHint, setColumnHint] = useState('')
+  const shownFields = APPROVAL_FIELDS.filter((field) => visibleIds.includes(field.id))
+  const shownGroups = FIELD_GROUPS.map((label) => ({
+    label,
+    fields: shownFields.filter((field) => field.group === label),
+  })).filter((group) => group.fields.length > 0)
 
   const scene = SCENE_TREE.find((item) => item.id === l1) ?? SCENE_TREE[0]
 
@@ -301,7 +431,16 @@ export function ApprovalListPage() {
             <button className="appr-link" type="button">
               导出
             </button>
-            <button className="appr-link" type="button">
+            <button
+              className="appr-link"
+              type="button"
+              onClick={() => {
+                setDraftIds(visibleIds)
+                setColumnHint('')
+                setFoldedGroups([])
+                setColumnsOpen(true)
+              }}
+            >
               设置可见字段
             </button>
           </div>
@@ -317,43 +456,17 @@ export function ApprovalListPage() {
                     onClick={toggleAll}
                   />
                 </th>
-                <th colSpan={12}>审批链基础信息</th>
-                <th colSpan={11}>审批链业务信息</th>
-                <th colSpan={3}>领取人信息</th>
-                <th colSpan={4}>商品订单信息</th>
+                {shownGroups.map((group) => (
+                  <th key={group.label} colSpan={group.fields.length}>
+                    {group.label}
+                  </th>
+                ))}
                 <th rowSpan={2}>操作</th>
               </tr>
               <tr>
-                <th>批次号</th>
-                <th>审批单号</th>
-                <th>商户</th>
-                <th>审批链名称</th>
-                <th>审批提报人</th>
-                <th>提报时间</th>
-                <th>经办人</th>
-                <th>经办人手机号</th>
-                <th>关联凭证</th>
-                <th>凭证审核状态</th>
-                <th>经办时间</th>
-                <th>关联线索</th>
-                <th>审批状态</th>
-                <th>订单号</th>
-                <th>商品名称</th>
-                <th>商品价格</th>
-                <th>发放金额</th>
-                <th>新车主姓名</th>
-                <th>车主手机号</th>
-                <th>车牌号</th>
-                <th>车架号</th>
-                <th>车辆价格</th>
-                <th>外部流程号</th>
-                <th>领取人手机号</th>
-                <th>领取人姓名</th>
-                <th>领取人身份证号</th>
-                <th>商品订单号</th>
-                <th>下单状态</th>
-                <th>主权益</th>
-                <th>赠送权益</th>
+                {shownFields.map((field) => (
+                  <th key={field.id}>{field.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -365,42 +478,9 @@ export function ApprovalListPage() {
                     <td className="col-check">
                       <span className={on ? 'appr-box on' : allowed ? 'appr-box' : 'appr-box is-off'} />
                     </td>
-                    <td>{item.batchNo}</td>
-                    <td>{item.approvalNo}</td>
-                    <td>{item.merchant}</td>
-                    <td>{item.chainName}</td>
-                    <td>{item.applicant}</td>
-                    <td>{item.submittedAt}</td>
-                    <td>{item.handler}</td>
-                    <td>{item.handlerPhone}</td>
-                    <td>{item.voucherCount > 0 ? `${item.voucherCount}个凭证` : '无凭证'}</td>
-                    <td>
-                      <em className={`appr-status is-${statusTone(item.voucherStatus)}`}>{item.voucherStatus}</em>
-                    </td>
-                    <td>{item.handledAt}</td>
-                    <td>{item.clue}</td>
-                    <td>
-                      <em className={`appr-status is-${statusTone(item.approvalStatus)}`}>{item.approvalStatus}</em>
-                    </td>
-                    <td>{item.orderNo}</td>
-                    <td>{item.goodsName}</td>
-                    <td>{item.goodsPrice ? yuan(item.goodsPrice) : ''}</td>
-                    <td>{item.grantAmount ? yuan(item.grantAmount) : ''}</td>
-                    <td>{item.ownerName}</td>
-                    <td>{maskPhone(item.ownerPhone)}</td>
-                    <td>{item.plate}</td>
-                    <td>{item.vin}</td>
-                    <td>{item.carPrice}</td>
-                    <td>{item.outerNo}</td>
-                    <td>{maskPhone(item.receiverPhone)}</td>
-                    <td>{item.receiverName}</td>
-                    <td>{item.receiverIdNo}</td>
-                    <td>{item.goodsOrderNo}</td>
-                    <td>
-                      <em className={`appr-status is-${statusTone(item.orderStatus)}`}>{item.orderStatus}</em>
-                    </td>
-                    <td>{item.mainBenefit}</td>
-                    <td>{item.giftBenefit}</td>
+                    {shownFields.map((field) => (
+                      <td key={field.id}>{approvalCell(field.id, item)}</td>
+                    ))}
                     <td onClick={(event) => event.stopPropagation()}>
                       <div className="appr-ops">
                         <button type="button">商品订单</button>
@@ -418,6 +498,111 @@ export function ApprovalListPage() {
         </div>
         {rows.length === 0 ? <div className="empty-panel">当前分类下暂无审批记录</div> : null}
       </div>
+      {columnsOpen ? (
+        <div className="admin-mask" onClick={() => setColumnsOpen(false)}>
+          <div
+            className="admin-modal appr-columns"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="visible-fields-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="pick-head">
+              <h2 id="visible-fields-title">设置可见字段</h2>
+              <button
+                className="appr-link"
+                type="button"
+                onClick={() => {
+                  setColumnHint('')
+                  setDraftIds(draftIds.length === APPROVAL_FIELDS.length ? [] : APPROVAL_FIELDS.map((field) => field.id))
+                }}
+              >
+                {draftIds.length === APPROVAL_FIELDS.length ? '取消全选' : '全选'}
+              </button>
+            </div>
+            {FIELD_GROUPS.map((label) => {
+              const fields = APPROVAL_FIELDS.filter((field) => field.group === label)
+              const ids = fields.map((field) => field.id)
+              const allOn = ids.every((id) => draftIds.includes(id))
+              const folded = foldedGroups.includes(label)
+              return (
+                <div key={label} className="dc-col-group">
+                  <div className="appr-col-title">
+                    <button
+                      className="appr-fold-btn"
+                      type="button"
+                      aria-label={folded ? '展开' : '收起'}
+                      onClick={() =>
+                        setFoldedGroups((prev) => (prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]))
+                      }
+                    >
+                      <span className={folded ? 'appr-fold is-shut' : 'appr-fold'} />
+                    </button>
+                    <label>
+                      <span className={allOn ? 'appr-box on' : 'appr-box'} />
+                      <input
+                        type="checkbox"
+                        checked={allOn}
+                        onChange={() => {
+                          setColumnHint('')
+                          setDraftIds((prev) => {
+                            const rest = prev.filter((id) => !ids.includes(id))
+                            const next = allOn ? rest : [...rest, ...ids]
+                            return APPROVAL_FIELDS.map((field) => field.id).filter((id) => next.includes(id))
+                          })
+                        }}
+                      />
+                      <strong>{label}</strong>
+                    </label>
+                  </div>
+                  {folded ? null : (
+                    <div className="appr-col-grid">
+                      {fields.map((field) => (
+                        <label key={field.id}>
+                          <span className={draftIds.includes(field.id) ? 'appr-box on' : 'appr-box'} />
+                          <input
+                            type="checkbox"
+                            checked={draftIds.includes(field.id)}
+                            onChange={() => {
+                              setColumnHint('')
+                              setDraftIds((prev) => {
+                                const next = prev.includes(field.id) ? prev.filter((id) => id !== field.id) : [...prev, field.id]
+                                return APPROVAL_FIELDS.map((item) => item.id).filter((id) => next.includes(id))
+                              })
+                            }}
+                          />
+                          {field.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {columnHint ? <p className="appr-column-hint">{columnHint}</p> : null}
+            <div className="modal-actions">
+              <button className="admin-ghost" type="button" onClick={() => setColumnsOpen(false)}>
+                返回
+              </button>
+              <button
+                className="admin-primary"
+                type="button"
+                onClick={() => {
+                  if (!draftIds.length) {
+                    setColumnHint('请至少保留一个字段')
+                    return
+                  }
+                  localStorage.setItem(VISIBLE_FIELD_KEY, JSON.stringify(draftIds))
+                  setVisibleIds(draftIds)
+                  setColumnsOpen(false)
+                }}
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
@@ -467,10 +652,10 @@ function FeeChangeDialog({ onAgree, onRefuse }: { onAgree: () => void; onRefuse:
         <p className="fee-change-note">如不同意本次变更，订单将无法提交。</p>
         <div className="modal-actions">
           <button className="admin-ghost" type="button" onClick={onRefuse}>
-            不同意
+            拒绝
           </button>
           <button className="admin-primary" type="button" onClick={onAgree}>
-            同意变更
+            接受
           </button>
         </div>
       </div>
@@ -646,7 +831,7 @@ export function ApprovalBuyPage() {
         {step === 3 ? (
           <div className="buy-pay">
             <div className="buy-pay-head">
-              <h1>会员积分</h1>
+              <h1>采购积分</h1>
               <p className="sku-no">
                 来自审批单 {record.approvalNo} · {record.chainName}
               </p>
@@ -680,7 +865,7 @@ export function ApprovalBuyPage() {
         ) : (
           <div className="buy-hero">
             <div className="buy-form">
-              <h1>会员积分</h1>
+              <h1>采购积分</h1>
               <p className="sku-no">
                 来自审批单 {record.approvalNo} · {record.chainName}
               </p>

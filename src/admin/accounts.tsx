@@ -62,7 +62,7 @@ export function AccountViewButton({ rows }: { rows: ImportRow[] }) {
   return (
     <>
       <button className="account-btn" type="button" onClick={() => setOpen(true)}>
-        查看账号信息
+        查看发放信息
       </button>
       {open ? <AccountInfoModal rows={rows} onClose={() => setOpen(false)} /> : null}
     </>

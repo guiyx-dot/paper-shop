@@ -373,6 +373,14 @@ function statusClass(status: ListStatus) {
   return 'is-off'
 }
 
+function orderTone(item: ListOrder) {
+  if (item.status === '待支付') return 'is-wait'
+  if (item.status === '充值中') return 'is-ing'
+  if (item.status === '发放失败') return 'is-off'
+  if (item.grant === 'partial' || item.expireLabel === '【已过期】') return 'is-partial'
+  return 'is-ok'
+}
+
 export function PurchaseOrdersPage() {
   const { orders, users, approvalDraft, go } = useAdmin()
   const [tab, setTab] = useState<(typeof TABS)[number]['id']>('all')
@@ -477,7 +485,7 @@ export function PurchaseOrdersPage() {
             ))}
           </div>
           {shown.map((item) => (
-            <article key={item.id} className={item.fresh ? 'po-order is-fresh' : 'po-order'}>
+            <article key={item.id} className={`po-order ${orderTone(item)}`}>
               <div className="po-order-bar">
                 <span>订单号：{item.id}</span>
                 <span>批次号：{item.batchNo}</span>
@@ -496,12 +504,12 @@ export function PurchaseOrdersPage() {
                     <b>¥{money(item.faceAmount)}</b>
                   </div>
                 </div>
-                <div>{item.merchantName}</div>
-                <div>{item.businessType}</div>
+                <div className="po-plain">{item.merchantName}</div>
+                <div className="po-plain">{item.businessType}</div>
                 <div>
                   <AccountViewButton rows={item.accounts} />
                 </div>
-                <div className="po-rate">
+                <div className="po-rate po-plain">
                   {item.feeRate}
                   {item.feeDetail ? <RateTip lines={item.feeDetail} /> : null}
                 </div>
