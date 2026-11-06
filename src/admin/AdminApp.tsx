@@ -164,6 +164,15 @@ function NoticeArt() {
 }
 
 function PriceNotice({ onClose }: { onClose: () => void }) {
+  const [agreed, setAgreed] = useState(false)
+  const [needCheck, setNeedCheck] = useState(false)
+  const close = () => {
+    if (!agreed) {
+      setNeedCheck(true)
+      return
+    }
+    onClose()
+  }
   return (
     <div className="admin-mask" role="presentation">
       <div className="admin-modal price-notice" role="dialog" aria-modal="true" aria-labelledby="price-notice-title" onClick={(event) => event.stopPropagation()}>
@@ -173,7 +182,7 @@ function PriceNotice({ onClose }: { onClose: () => void }) {
             <time dateTime="2026-08-04">2026-08-04</time>
           </div>
           <NoticeArt />
-          <button className="price-notice-close" type="button" aria-label="关闭" onClick={onClose}>
+          <button className="price-notice-close" type="button" aria-label="关闭" onClick={close}>
             ×
           </button>
         </div>
@@ -203,7 +212,18 @@ function PriceNotice({ onClose }: { onClose: () => void }) {
           </p>
         </div>
         <div className="modal-actions">
-          <button className="admin-primary" type="button" onClick={onClose}>
+          <label className={needCheck && !agreed ? 'price-notice-check is-hint' : 'price-notice-check'}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(event) => {
+                setAgreed(event.target.checked)
+                if (event.target.checked) setNeedCheck(false)
+              }}
+            />
+            <span>我已阅读并确认上述调价</span>
+          </label>
+          <button className="admin-primary" type="button" disabled={!agreed} onClick={close}>
             我知道了
           </button>
         </div>

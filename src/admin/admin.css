@@ -837,8 +837,38 @@
 }
 
 .price-notice .modal-actions {
+  justify-content: space-between;
+  align-items: center;
   margin-top: 0;
   padding: 16px 28px 20px;
+}
+
+.price-notice-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #1d2129;
+  font-size: 14px;
+  line-height: 22px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.price-notice-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #1ac7c2;
+  cursor: pointer;
+}
+
+.price-notice-check.is-hint {
+  color: #d4380d;
+}
+
+.price-notice-check.is-hint input {
+  outline: 2px solid #d4380d;
+  outline-offset: 1px;
 }
 
 .fee-change-modal .modal-actions {
@@ -1688,6 +1718,10 @@ input[type='range'] {
   width: 176px;
   height: 235px;
   object-fit: cover;
+}
+
+.equity-tile-slot.is-art .shelf-photo.is-packet {
+  transform: scale(1.06);
 }
 
 .equity-tile.on .equity-tile-slot.is-art {

@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { AlipayCoinArt, AlipayCouponArt, WechatCoinArt, WechatCouponArt } from './alipay-coin-art'
-import { AlipayPlusArt } from './alipay-plus-art'
 import { hasShelfPhoto, ShelfPhoto } from './shelf-photo'
 import { FEE_PCT, GENERAL_FEE_PCT, PURCHASE_GOODS, UNIT_PRICE, money } from './model'
 
@@ -43,12 +41,7 @@ export function EquityPicker({
             type="button"
             onClick={() => onSelect(item.id)}
           >
-            <span className={item.id === 'gold-alipay' || item.id === 'gold-wechat' || item.id === 'alipay' || item.id === 'wechat' || item.id === 'alipay-plus' || hasShelfPhoto(item.id) ? 'equity-tile-slot is-art' : 'equity-tile-slot'} aria-hidden>
-              {item.id === 'gold-alipay' ? <AlipayCoinArt /> : null}
-              {item.id === 'gold-wechat' ? <WechatCoinArt /> : null}
-              {item.id === 'alipay' ? <AlipayCouponArt /> : null}
-              {item.id === 'wechat' ? <WechatCouponArt /> : null}
-              {item.id === 'alipay-plus' ? <AlipayPlusArt /> : null}
+            <span className={hasShelfPhoto(item.id) ? 'equity-tile-slot is-art' : 'equity-tile-slot'} aria-hidden>
               {hasShelfPhoto(item.id) ? <ShelfPhoto id={item.id} /> : null}
             </span>
             <strong>{item.name}</strong>

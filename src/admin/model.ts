@@ -46,8 +46,8 @@ export const PURCHASE_GOODS: { id: string; name: string; tab: 'coin' | 'coupon' 
   { id: 'wechat', name: '微信立减金', tab: 'coupon' },
   { id: 'alipay', name: '支付宝通用券', tab: 'coupon' },
   { id: 'alipay-plus', name: '支付宝通用券Plus', tab: 'coupon' },
-  { id: 'gift-pack', name: '万佳乐', tab: 'coupon' },
   { id: 'corp-pay', name: '因公付', tab: 'coupon' },
+  { id: 'gift-pack', name: '万佳乐', tab: 'coupon' },
 ]
 
 export function purchaseGoodName(id?: string) {
