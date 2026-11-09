@@ -3,8 +3,8 @@ import { hasShelfPhoto, ShelfPhoto } from './shelf-photo'
 import { FEE_PCT, GENERAL_FEE_PCT, PURCHASE_GOODS, UNIT_PRICE, money } from './model'
 
 const TABS: { id: 'coin' | 'coupon'; label: string }[] = [
-  { id: 'coin', label: '币' },
-  { id: 'coupon', label: '券' },
+  { id: 'coin', label: '通用币' },
+  { id: 'coupon', label: '通用券' },
 ]
 
 function tabFor(productId: string): 'coin' | 'coupon' {

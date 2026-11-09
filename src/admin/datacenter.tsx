@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { FEE_RATE, GENERAL_FEE_RATE, PURCHASE_GOODS, UNIT_PRICE, money, round2, skuById } from './model'
 
 type TabKey = 'benefit' | 'fund'
 
@@ -95,6 +96,43 @@ function issueAmount(face: string) {
   return Number.isFinite(value) ? value.toFixed(2) : face
 }
 
+function parseMoney(text: string) {
+  const value = Number.parseFloat(text.replace(/[^\d.]/g, ''))
+  return Number.isFinite(value) ? value : 0
+}
+
+function feePct(rate: number) {
+  return `${(rate * 100).toFixed(2)}%`
+}
+
+type ReissueGood = { id: string; name: string; price: number; rate: number; group: string }
+
+const REISSUE_GOODS: ReissueGood[] = [
+  ...PURCHASE_GOODS.map((item) => ({
+    id: item.id,
+    name: item.name,
+    price: skuById(item.id)?.cost ?? UNIT_PRICE,
+    rate: FEE_RATE,
+    group: item.tab === 'coin' ? '通用币' : '通用券',
+  })),
+  { id: 'general', name: '通用积分', price: UNIT_PRICE, rate: GENERAL_FEE_RATE, group: '通用积分' },
+]
+
+const REISSUE_GROUPS = ['通用币', '通用券', '通用积分']
+
+function reissueQuote(row: DetailRow, good: ReissueGood | null) {
+  const oldPrice = parseMoney(row.face)
+  const oldFee = parseMoney(row.fee)
+  const oldRate = oldPrice > 0 ? oldFee / oldPrice : 0
+  const price = good ? good.price : oldPrice
+  const rate = good ? good.rate : oldRate
+  const fee = round2(price * rate)
+  const priceGap = round2(Math.max(0, price - oldPrice))
+  const feeGap = round2(Math.max(0, fee - oldFee))
+  const higher = Boolean(good) && (price > oldPrice + 0.001 || rate > oldRate + 0.0001)
+  return { oldPrice, oldFee, oldRate, price, rate, fee, priceGap, feeGap, due: round2(priceGap + feeGap), higher }
+}
+
 const WHITELIST = new Set(['产研中心线上验证专用'])
 
 function inRange(value: string, start: string, end: string) {
@@ -178,6 +216,9 @@ export function DatacenterPage() {
   const [reissueId, setReissueId] = useState<string | null>(null)
   const [reissueReason, setReissueReason] = useState('')
   const [reissueMissing, setReissueMissing] = useState(false)
+  const [reissueGoodId, setReissueGoodId] = useState<string | null>(null)
+  const [reissuePick, setReissuePick] = useState(false)
+  const [reissuePay, setReissuePay] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [visible, setVisible] = useState<string[]>(BENEFIT_FIELDS.map((item) => item.id))
@@ -276,6 +317,34 @@ export function DatacenterPage() {
     setReissueId(null)
     setReissueReason('')
     setReissueMissing(false)
+    setReissueGoodId(null)
+    setReissuePick(false)
+    setReissuePay(false)
+  }
+
+  const reissueGood = REISSUE_GOODS.find((item) => item.id === reissueGoodId) ?? null
+  const quote = reissueRow ? reissueQuote(reissueRow, reissueGood) : null
+
+  const finishReissue = () => {
+    const good = reissueGood
+    const mark = (row: DetailRow) =>
+      row.id === reissueId
+        ? {
+            ...row,
+            reissued: true,
+            ...(good
+              ? {
+                  couponName: good.name,
+                  face: `${good.price}元`,
+                  fee: `¥${money(round2(good.price * good.rate))}`,
+                }
+              : {}),
+          }
+        : row
+    setBenefitRows((prev) => prev.map(mark))
+    setFundRows((prev) => prev.map(mark))
+    closeReissue()
+    showToast('补发成功')
   }
 
   const confirmReissue = () => {
@@ -283,11 +352,11 @@ export function DatacenterPage() {
       setReissueMissing(true)
       return
     }
-    const mark = (row: DetailRow) => (row.id === reissueId ? { ...row, reissued: true } : row)
-    setBenefitRows((prev) => prev.map(mark))
-    setFundRows((prev) => prev.map(mark))
-    closeReissue()
-    showToast('补发成功')
+    if (quote?.higher) {
+      setReissuePay(true)
+      return
+    }
+    finishReissue()
   }
 
   const cell = (id: string, row: DetailRow) => {
@@ -461,6 +530,9 @@ export function DatacenterPage() {
                             }
                             setReissueReason('')
                             setReissueMissing(false)
+                            setReissueGoodId(null)
+                            setReissuePick(false)
+                            setReissuePay(false)
                             setReissueId(row.id)
                           }}
                         >
@@ -576,7 +648,107 @@ export function DatacenterPage() {
         </div>
       ) : null}
 
-      {reissueRow ? (
+      {reissueRow && quote && reissuePay && reissueGood ? (
+        <div className="admin-mask" onClick={() => setReissuePay(false)}>
+          <div className="admin-modal reissue-form reissue-pay" role="dialog" aria-modal="true" aria-labelledby="reissue-pay-lead" onClick={(event) => event.stopPropagation()}>
+            <p id="reissue-pay-lead" className="reissue-form-lead">
+              补差支付
+            </p>
+            <p className="reissue-pay-note">更换后的商品价格或服务费率更高，需完成补差支付后才能补发。</p>
+            <div className="reissue-pay-row">
+              <span>原商品</span>
+              <b>{reissueRow.couponName || reissueRow.goodsCode}</b>
+            </div>
+            <div className="reissue-pay-row">
+              <span>新商品</span>
+              <b>{reissueGood.name}</b>
+            </div>
+            <div className="reissue-pay-row">
+              <span>商品价格</span>
+              <b>
+                {money(quote.oldPrice)} → {money(quote.price)}
+              </b>
+            </div>
+            <div className="reissue-pay-row">
+              <span>服务费率</span>
+              <b>
+                {feePct(quote.oldRate)} → {feePct(quote.rate)}
+              </b>
+            </div>
+            <div className="reissue-pay-row">
+              <span>商品补差</span>
+              <b>¥ {money(quote.priceGap)}</b>
+            </div>
+            <div className="reissue-pay-row">
+              <span>服务费补差</span>
+              <b>¥ {money(quote.feeGap)}</b>
+            </div>
+            <div className="reissue-pay-row is-due">
+              <span>应付差额</span>
+              <b>¥ {money(quote.due)}</b>
+            </div>
+            <div className="modal-actions">
+              <button className="admin-ghost" type="button" onClick={() => setReissuePay(false)}>
+                返回
+              </button>
+              <button className="admin-primary" type="button" onClick={finishReissue}>
+                确认支付 ¥ {money(quote.due)}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reissueRow && reissuePick ? (
+        <div className="admin-mask" onClick={() => setReissuePick(false)}>
+          <div className="admin-modal reissue-form reissue-pick" role="dialog" aria-modal="true" aria-labelledby="reissue-pick-lead" onClick={(event) => event.stopPropagation()}>
+            <p id="reissue-pick-lead" className="reissue-form-lead">
+              选择其他商品
+            </p>
+            <div className="reissue-pick-list">
+              <button
+                className={reissueGoodId ? 'reissue-pick-item' : 'reissue-pick-item on'}
+                type="button"
+                onClick={() => {
+                  setReissueGoodId(null)
+                  setReissuePick(false)
+                }}
+              >
+                <strong>保持原商品</strong>
+                <span>{reissueRow.goodsCode}</span>
+                <span>¥ {issueAmount(reissueRow.face)}</span>
+              </button>
+              {REISSUE_GROUPS.map((group) => (
+                <div key={group}>
+                  <p className="reissue-pick-group">{group}</p>
+                  {REISSUE_GOODS.filter((item) => item.group === group).map((item) => (
+                    <button
+                      key={item.id}
+                      className={reissueGoodId === item.id ? 'reissue-pick-item on' : 'reissue-pick-item'}
+                      type="button"
+                      onClick={() => {
+                        setReissueGoodId(item.id)
+                        setReissuePick(false)
+                      }}
+                    >
+                      <strong>{item.name}</strong>
+                      <span>¥ {money(item.price)}</span>
+                      <span>服务费 {feePct(item.rate)}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="admin-ghost" type="button" onClick={() => setReissuePick(false)}>
+                返回
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reissueRow && quote && !reissuePick && !reissuePay ? (
         <div className="admin-mask" onClick={closeReissue}>
           <div className="admin-modal reissue-form" role="dialog" aria-modal="true" aria-labelledby="reissue-lead" onClick={(event) => event.stopPropagation()}>
             <p id="reissue-lead" className="reissue-form-lead">
@@ -584,15 +756,27 @@ export function DatacenterPage() {
             </p>
             <div className="reissue-form-row">
               <span>发放商品:</span>
-              <input readOnly value={reissueRow.goodsCode} />
+              <div className="reissue-goods">
+                <input readOnly value={reissueGood ? reissueGood.name : reissueRow.goodsCode} />
+                <button className="reissue-switch" type="button" onClick={() => setReissuePick(true)}>
+                  切换商品
+                </button>
+              </div>
             </div>
             <div className="reissue-form-row">
               <span>发放金额:</span>
               <div className="reissue-amount">
-                <input readOnly value={issueAmount(reissueRow.face)} />
+                <input readOnly value={reissueGood ? money(quote.price) : issueAmount(reissueRow.face)} />
                 <em>请确认发放金额是否正确</em>
               </div>
             </div>
+            {reissueGood ? (
+              <div className="reissue-form-row">
+                <span>服务费率:</span>
+                <input readOnly value={feePct(quote.rate)} />
+              </div>
+            ) : null}
+            {quote.higher ? <p className="reissue-extra">更换后的商品价格或服务费率更高，确定后需补缴差额。</p> : null}
             <div className="reissue-form-row is-reason">
               <span>
                 <i>*</i>补发原因:

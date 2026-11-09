@@ -36,10 +36,12 @@ export function KindPicker({
   kind,
   onKind,
   plain = false,
+  generalOnly = false,
 }: {
   kind: PurchaseKind | null
   onKind: (kind: PurchaseKind) => void
   plain?: boolean
+  generalOnly?: boolean
 }) {
   const dedicatedOn = kind === 'dedicated'
   const generalOn = kind === 'general'
@@ -64,7 +66,7 @@ export function KindPicker({
       )}
       <div className="kind-quiet">
         <span>采购类型</span>
-        {row('dedicated', dedicatedOn, '券', '专用券', '兑换「权益专区」币/券')}
+        {generalOnly ? null : row('dedicated', dedicatedOn, '券', '专用券', '兑换「权益专区」币/券')}
         {row('general', generalOn, '积', '通用积分', '兑换「积分专区」专属商品')}
       </div>
     </div>
@@ -144,20 +146,37 @@ const APPROVAL_FIELDS = [
 
 type ApprovalFieldId = (typeof APPROVAL_FIELDS)[number]['id']
 
-const VISIBLE_FIELD_KEY = 'paper-shop-approval-visible-fields'
+const VISIBLE_FIELD_KEY = 'paper-shop-approval-visible-fields-v2'
+
+const DEFAULT_VISIBLE_FIELDS: ApprovalFieldId[] = [
+  'batchNo',
+  'approvalNo',
+  'merchant',
+  'chainName',
+  'voucher',
+  'voucherStatus',
+  'approvalStatus',
+  'goodsName',
+  'grantAmount',
+  'receiverPhone',
+  'receiverName',
+  'receiverIdNo',
+  'goodsOrderNo',
+  'orderStatus',
+]
 
 function readVisibleFields() {
   const all = APPROVAL_FIELDS.map((field) => field.id)
   try {
     const raw = localStorage.getItem(VISIBLE_FIELD_KEY)
-    if (!raw) return all
+    if (!raw) return DEFAULT_VISIBLE_FIELDS
     const saved = JSON.parse(raw) as unknown
-    if (!Array.isArray(saved)) return all
+    if (!Array.isArray(saved)) return DEFAULT_VISIBLE_FIELDS
     const picked = new Set(saved.filter((id): id is ApprovalFieldId => typeof id === 'string' && all.includes(id as ApprovalFieldId)))
     const next = all.filter((id) => picked.has(id))
-    return next.length ? next : all
+    return next.length ? next : DEFAULT_VISIBLE_FIELDS
   } catch {
-    return all
+    return DEFAULT_VISIBLE_FIELDS
   }
 }
 
@@ -607,24 +626,6 @@ export function ApprovalListPage() {
   )
 }
 
-const BUY_STEPS = ['采购类型', '选择商品', '付款']
-
-function BuySteps({ step }: { step: 1 | 2 | 3 }) {
-  return (
-    <ol className={`buy-steps is-${step}`} aria-label="采购进度">
-      {BUY_STEPS.map((label, index) => {
-        const current = index + 1
-        return (
-          <li key={label} className={step === current ? 'on' : step > current ? 'done' : ''}>
-            <span className="buy-step-dot">{current}</span>
-            <span className="buy-step-label">{label}</span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
 function PayGoods({ name, skuId, amount }: { name: string; skuId?: string; amount: string }) {
   return (
     <div className="pay-goods">
@@ -749,10 +750,10 @@ function PayStage({
 export function ApprovalBuyPage() {
   const { go, approvalDraft, setApprovalDraft, createOrder, orders } = useAdmin()
   const record = approvalDraft ? approvalById(approvalDraft.recordId) : undefined
-  const coinsOnly = isCommissionScene(record?.l2)
+  const commission = isCommissionScene(record?.l2)
   const resumed = Boolean(approvalDraft?.ticketNo)
-  const [step, setStep] = useState<1 | 2 | 3>(resumed ? 3 : coinsOnly ? 2 : 1)
-  const [kind, setKind] = useState<PurchaseKind | null>(resumed ? (approvalDraft?.kind ?? null) : coinsOnly ? 'dedicated' : null)
+  const [step, setStep] = useState<1 | 3>(resumed ? 3 : 1)
+  const [kind, setKind] = useState<PurchaseKind>(commission ? 'general' : resumed ? (approvalDraft?.kind ?? 'dedicated') : 'dedicated')
   const [productId, setProductId] = useState<string | null>(
     resumed ? (approvalDraft?.kind === 'general' ? 'general' : (approvalDraft?.productId ?? null)) : null,
   )
@@ -777,14 +778,13 @@ export function ApprovalBuyPage() {
   const rows = approvalDraft.rows
 
   const chooseKind = (next: PurchaseKind) => {
+    if (commission && next !== 'general') return
     if (next !== kind) setProductId(null)
     setKind(next)
-    setStep(2)
   }
 
   const placeOrder = (id: string) => {
-    if (!kind) return
-    if (coinsOnly && id !== 'gold-wechat' && id !== 'gold-alipay') return
+    if (commission && id !== 'general') return
     setProductId(id)
     setApprovalDraft({
       ...approvalDraft,
@@ -835,7 +835,6 @@ export function ApprovalBuyPage() {
               <p className="sku-no">
                 来自审批单 {record.approvalNo} · {record.chainName}
               </p>
-              <BuySteps step={step} />
             </div>
             <div className={paid ? 'pay-banner is-ok' : 'pay-banner'}>
               {paid ? '支付成功，权益已发放至审批用户，打开用户端即可兑换使用。' : '订单已生成，请确认信息并完成付款。'}
@@ -855,7 +854,7 @@ export function ApprovalBuyPage() {
               due={money(payQuote.merchantPay)}
               balance={money(ACCOUNT_BALANCE)}
               rows={approvalDraft.rows}
-              onBack={() => setStep(2)}
+              onBack={() => setStep(1)}
               onPay={() => {
                 if (!paid && !paying) setFeeAsk(true)
               }}
@@ -869,41 +868,27 @@ export function ApprovalBuyPage() {
               <p className="sku-no">
                 来自审批单 {record.approvalNo} · {record.chainName}
               </p>
-              <BuySteps step={step} />
 
-              {step === 1 ? (
-                <div className="field is-choices">
-                  <span>选择采购类型</span>
-                  <KindPicker plain kind={kind} onKind={chooseKind} />
-                </div>
-              ) : null}
+              <div className="field is-choices">
+                <span>选择采购类型</span>
+                <KindPicker plain generalOnly={commission} kind={commission ? 'general' : kind} onKind={chooseKind} />
+              </div>
 
-              {step === 2 && kind === 'dedicated' ? (
-                <div className="field">
-                  <span>选择商品</span>
-                  <em>点击商品即下单</em>
-                  <EquityPicker coinsOnly={coinsOnly} value={productId ?? ''} onSelect={placeOrder} />
-                </div>
-              ) : null}
-
-              {step === 2 && kind === 'general' ? (
-                <div className="field">
-                  <span>选择商品</span>
-                  <em>点击商品即下单</em>
-                  <GeneralPointsCard selected={productId === 'general'} onSelect={() => placeOrder('general')} />
-                </div>
-              ) : null}
+              <div className="field buy-goods">
+                <span>选择商品</span>
+                {commission || kind === 'general' ? (
+                  <div className={commission ? undefined : 'buy-goods-general'}>
+                    <GeneralPointsCard selected={productId === 'general'} onSelect={() => placeOrder('general')} />
+                  </div>
+                ) : (
+                  <EquityPicker value={productId ?? ''} onSelect={placeOrder} />
+                )}
+              </div>
 
               <div className="issue-actions">
-                {step === 1 || coinsOnly ? (
-                  <button className="admin-ghost" type="button" onClick={() => go('approval')}>
-                    返回
-                  </button>
-                ) : (
-                  <button className="admin-ghost" type="button" onClick={() => setStep(1)}>
-                    上一步
-                  </button>
-                )}
+                <button className="admin-ghost" type="button" onClick={() => go('approval')}>
+                  返回
+                </button>
               </div>
             </div>
           </div>

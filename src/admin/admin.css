@@ -119,6 +119,10 @@
   grid-template-columns: 184px minmax(0, 1fr) auto;
 }
 
+.hive-body.is-prd .admin-main {
+  overflow: auto;
+}
+
 .admin-side {
   background: #f5f6f8;
   border-right: 1px solid #eef0f3;
@@ -1607,6 +1611,14 @@ input[type='range'] {
   padding: 0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.buy-goods {
+  min-height: 438px;
+}
+
+.buy-goods-general {
+  padding-top: 73px;
 }
 
 .equity-tabs {
@@ -3274,6 +3286,107 @@ input[type='range'] {
 
 .reissue-form .modal-actions {
   margin-top: 18px;
+}
+
+.reissue-goods {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reissue-goods input {
+  flex: 1;
+  min-width: 0;
+}
+
+.reissue-switch {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #1ac7c2;
+  border-radius: 2px;
+  background: #fff;
+  color: #0e8a86;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.reissue-extra {
+  margin: -4px 0 12px 100px;
+  color: #d46b08;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.reissue-pick {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.reissue-pick-list {
+  max-height: min(460px, calc(100vh - 220px));
+  overflow: auto;
+}
+
+.reissue-pick-group {
+  margin: 12px 0 8px;
+  color: #86909c;
+  font-size: 13px;
+}
+
+.reissue-pick-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 120px;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e5e6eb;
+  border-radius: 4px;
+  background: #fff;
+  color: #1d2129;
+  text-align: left;
+}
+
+.reissue-pick-item.on {
+  border-color: #1ac7c2;
+  background: #f3fbfb;
+}
+
+.reissue-pick-item strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.reissue-pick-item span {
+  color: #4e5969;
+  font-size: 13px;
+  text-align: right;
+}
+
+.reissue-pay-note {
+  margin: -8px 0 12px;
+  color: #4e5969;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.reissue-pay-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f2f3f5;
+  color: #4e5969;
+  font-size: 14px;
+}
+
+.reissue-pay-row b {
+  color: #1d2129;
+  font-weight: 600;
+}
+
+.reissue-pay-row.is-due b {
+  color: #d4380d;
+  font-size: 16px;
 }
 
 .reissue-once {

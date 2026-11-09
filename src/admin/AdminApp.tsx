@@ -4,6 +4,7 @@ import { ApprovalBuyPage, ApprovalListPage, ApprovalPayPage } from './approval'
 import { DatacenterPage } from './datacenter'
 import { MallBannerPage, MallCategoryPage, MallGoodsPage, MallHomePage } from './mall-config'
 import { Phase2Brief } from '../phase2-brief'
+import { MerchantBrief } from './merchant-brief'
 import { MembersPage } from './members'
 import { PointFlowsPage } from './point-flows'
 import { RedeemsPage } from './redemptions'
@@ -32,7 +33,7 @@ const NAV: NavItem[] = [
     id: 'goods',
     label: '商品管理',
     icon: 'goods',
-    children: [{ id: 'goods-orders', label: '商品订单', screen: 'purchase-orders' }],
+    children: [{ id: 'goods-orders', label: '发放订单', screen: 'purchase-orders' }],
   },
   { id: 'activity', label: '活动管理', icon: 'activity', muted: true },
   { id: 'quota', label: '额度管理', icon: 'quota', muted: true },
@@ -245,7 +246,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
   }
 
   return (
-    <div className={place === 'mid' ? 'admin-root is-prd' : 'admin-root'}>
+    <div className="admin-root is-prd">
       <header className="hive-top">
         <div className="hive-brand">
           <strong>{place === 'mid' ? '数字中台' : '蜂巢云平台'}</strong>
@@ -267,7 +268,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
           <b>常念云</b>
         </div>
       </header>
-      <div className={place === 'mid' ? 'hive-body is-prd' : 'hive-body'}>
+      <div className="hive-body is-prd">
         <aside className="admin-side">
           {nav.map((item) => {
             const childOn = item.children?.some((child) => child.id === active)
@@ -335,7 +336,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
             <ApprovalListPage />
           ) : null}
         </main>
-        {place === 'mid' ? <Phase2Brief dock /> : null}
+        {place === 'mid' ? <Phase2Brief dock /> : <MerchantBrief />}
         {priceNotice ? <PriceNotice onClose={() => setPriceNotice(false)} /> : null}
       </div>
     </div>
