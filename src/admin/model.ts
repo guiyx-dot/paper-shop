@@ -113,6 +113,7 @@ export type AdminScreen =
   | 'flows'
   | 'shop-orders'
   | 'purchase-orders'
+  | 'messages'
 
 export function money(n: number) {
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

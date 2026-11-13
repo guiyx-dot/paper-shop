@@ -10,12 +10,13 @@ import { PointFlowsPage } from './point-flows'
 import { RedeemsPage } from './redemptions'
 import { PurchaseOrdersPage } from './purchase-orders'
 import { ShopOrdersPage } from './shop-orders'
+import { MessagesPage } from './messages'
 import type { AdminScreen } from './model'
 import './admin.css'
 
 type NavScreen = Extract<
   AdminScreen,
-  'members' | 'redeems' | 'flows' | 'approval' | 'datacenter' | 'mall-home' | 'mall-banner' | 'mall-goods' | 'mall-category' | 'shop-orders' | 'purchase-orders'
+  'members' | 'redeems' | 'flows' | 'approval' | 'datacenter' | 'mall-home' | 'mall-banner' | 'mall-goods' | 'mall-category' | 'shop-orders' | 'purchase-orders' | 'messages'
 >
 
 type NavItem = {
@@ -89,6 +90,12 @@ const MID_NAV: NavItem[] = [
       { id: 'shop-orders', label: '商品订单', screen: 'shop-orders' },
     ],
   },
+  {
+    id: 'content',
+    label: '内容中心',
+    icon: 'content',
+    children: [{ id: 'messages', label: '消息管理', screen: 'messages' }],
+  },
 ]
 
 function isApprovalScreen(screen: string) {
@@ -106,6 +113,7 @@ function currentNavId(screen: string) {
   if (screen === 'mall-goods') return 'mall-goods'
   if (screen === 'mall-category') return 'mall-category'
   if (screen === 'datacenter') return 'detail'
+  if (screen === 'messages') return 'messages'
   if (isApprovalScreen(screen)) return 'approval'
   return 'approval'
 }
@@ -133,6 +141,7 @@ function NavIcon({ name }: { name: string }) {
   if (name === 'audit') return <svg {...common}><path d="M4 2.8h6.2L13.2 6v7.2H4V2.8z" /><path d="M10.2 2.8V6h3" /><path d="M6.2 8.4h4M6.2 10.8h3.2" /></svg>
   if (name === 'orders') return <svg {...common}><path d="M3.2 3.2h9.6v10.2l-1.8-1.2-1.6 1.2-1.6-1.2-1.6 1.2-1.6-1.2-1.4 1.2V3.2z" /><path d="M5.6 6.4h4.8M5.6 8.8h3.4" /></svg>
   if (name === 'data') return <svg {...common}><path d="M3.2 12.4V8.2M6.8 12.4V4.4M10.4 12.4V7M13.2 12.4V5.4" /></svg>
+  if (name === 'content') return <svg {...common}><path d="M3.2 3.2h9.6v10.2H3.2V3.2z" /><path d="M5.4 6.2h5.2M5.4 8.6h5.2M5.4 11h3.2" /></svg>
   if (name === 'user') return <svg {...common}><circle cx="8" cy="5.4" r="2.2" /><path d="M3.6 13.2c.4-2.6 2-4 4.4-4s4 1.4 4.4 4" /></svg>
   if (name === 'upload') return <svg {...common}><path d="M3.2 10.6v2.4h9.6v-2.4" /><path d="M8 3.4v7.2M5.4 6 8 3.4 10.6 6" /></svg>
   return <svg {...common}><circle cx="8" cy="8" r="5.2" /><path d="M8 7.4v3.4M8 5.2h.01" /></svg>
@@ -317,6 +326,7 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
           {screen === 'redeems' ? <RedeemsPage /> : null}
           {screen === 'flows' ? <PointFlowsPage /> : null}
           {screen === 'shop-orders' ? <ShopOrdersPage /> : null}
+          {screen === 'messages' ? <MessagesPage /> : null}
           {screen === 'purchase-orders' ? <PurchaseOrdersPage /> : null}
           {screen === 'datacenter' ? <DatacenterPage /> : null}
           {screen === 'approval-buy' ? <ApprovalBuyPage /> : null}
@@ -332,7 +342,8 @@ function Shell({ place }: { place: 'merchant' | 'mid' }) {
             screen !== 'mall-category' &&
             screen !== 'flows' &&
             screen !== 'shop-orders' &&
-            screen !== 'purchase-orders') ? (
+            screen !== 'purchase-orders' &&
+            screen !== 'messages') ? (
             <ApprovalListPage />
           ) : null}
         </main>
