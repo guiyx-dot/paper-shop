@@ -174,7 +174,10 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
 
         <div className="fd-points" onClick={(event) => enter(event, { name: 'shop-points' })}>
           <span>当前会员积分</span>
-          <b>7500</b>
+          <em>
+            <b>7500</b>
+            <i aria-hidden>›</i>
+          </em>
         </div>
 
         <section className="fd-panel">
@@ -188,12 +191,8 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
           </div>
         </section>
 
-        <button className="fd-rights" type="button" onClick={() => go({ name: 'benefit-zone' })}>
-          <div>
-            <h3>积分权益专区</h3>
-            <span className="fd-enter">进入 ›</span>
-          </div>
-          <span className="fd-coin" aria-hidden="true" />
+        <button className="fd-rights is-art" type="button" onClick={() => go({ name: 'benefit-zone' })}>
+          <img src="/banners/rights-coupon.png" alt="积分权益专区" />
         </button>
 
         <div className="fd-duo">

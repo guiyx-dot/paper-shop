@@ -2811,9 +2811,12 @@ button {
   padding: 8px 16px;
   border-radius: 12px;
   background: #fff;
+  cursor: pointer;
 }
 .fd-points span { font-size: 13px; color: #666; }
+.fd-points em { display: flex; align-items: center; gap: 4px; font-style: normal; }
 .fd-points b { font-size: 20px; font-weight: 800; color: #ff6a1a; letter-spacing: 0.3px; line-height: 1; }
+.fd-points i { color: #ff6a1a; font-size: 18px; font-style: normal; line-height: 1; }
 .fd-panel { margin-top: 10px; padding: 14px 8px 12px; border-radius: 16px; background: #fff; }
 .fd-channels { display: grid; grid-template-columns: repeat(5, 1fr); row-gap: 14px; }
 .fd-channels button { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
@@ -2841,6 +2844,17 @@ button {
   background: linear-gradient(135deg, #ff9a4a 0%, #ff6a1a 55%, #ffb15a 100%);
   color: #fff;
   text-align: left;
+}
+.fd-rights.is-art {
+  display: block;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.fd-rights.is-art img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .fd-rights h3 { margin: 0 0 10px; font-size: 18px; font-weight: 800; }
 .fd-enter {
