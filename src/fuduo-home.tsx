@@ -192,7 +192,7 @@ export function FuduoHome({ allowH5 }: { allowH5: boolean }) {
         </section>
 
         <button className="fd-rights is-art" type="button" onClick={() => go({ name: 'benefit-zone' })}>
-          <img src="/banners/rights-coupon.png" alt="积分权益专区" />
+          <img src={`${import.meta.env.BASE_URL}banners/rights-coupon.png`} alt="积分权益专区" />
         </button>
 
         <div className="fd-duo">
