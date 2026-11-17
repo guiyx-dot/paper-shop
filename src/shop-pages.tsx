@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { NavBar, StatusBar } from './components'
-import { appendShopOrder, listShopRedeems } from './admin/shop-orders'
+import { catalogProduct } from './catalog'
+import { appendShopOrder, listShopRedeems, orderTimeValue } from './admin/shop-orders'
+import { loadRedeems } from './admin/redemptions'
 import { pointCost, useMallConfig, type ShopGood } from './shop-catalog'
-import { useStore } from './store'
+import { peekConsumer, useStore } from './store'
 
 function coverText(name: string) {
   return name.replace(/【[^】]*】/g, '').trim().slice(0, 2)
@@ -191,15 +193,87 @@ export function ShopDetailPage({ productId, from }: { productId: string; from?: 
   )
 }
 
+type PointsTab = 'zone' | 'mall'
+
+type PointsRow = {
+  id: string
+  productName: string
+  time: string
+  cost: number
+  status: string
+}
+
+function shopStatus(status: string) {
+  if (status === 'refunded') return '已退款'
+  if (status === 'pending') return '待发货'
+  if (status === 'shipped') return '已发货'
+  if (status === 'refunding') return '退款中'
+  return '已完成'
+}
+
+const BENEFIT_SEED: PointsRow[] = [
+  { id: 'BZ20261102001', productName: '通用金', time: '2026-11-02 14:20:18', cost: 500, status: '已完成' },
+  { id: 'BZ20261028002', productName: '支付宝通用券', time: '2026-10-28 10:06:33', cost: 500, status: '已完成' },
+  { id: 'BZ20261021003', productName: '支付宝通用券plus', time: '2026-10-21 16:42:09', cost: 500, status: '已完成' },
+  { id: 'BZ20261015004', productName: '微信立减金', time: '2026-10-15 09:18:47', cost: 200, status: '已完成' },
+  { id: 'BZ20261005005', productName: '万佳乐权益大礼包', time: '2026-10-05 19:03:26', cost: 100, status: '已完成' },
+]
+
+function listZoneRedeems(): PointsRow[] {
+  const live = peekConsumer()
+    .orders.filter((item) => catalogProduct(item.productId)?.zone === 'benefit')
+    .map((item) => ({
+      id: item.id,
+      productName: item.productName,
+      time: item.time,
+      cost: item.cost,
+      status: item.status === 'refunded' ? '已退款' : '已完成',
+    }))
+  const liveIds = new Set(live.map((item) => item.id))
+  return [...live, ...BENEFIT_SEED.filter((item) => !liveIds.has(item.id))].sort(
+    (a, b) => orderTimeValue(b.time) - orderTimeValue(a.time),
+  )
+}
+
+function listMallRedeems(): PointsRow[] {
+  const shop = listShopRedeems().map((item) => ({
+    id: item.id,
+    productName: item.productName,
+    time: item.time,
+    cost: item.cost,
+    status: shopStatus(item.status),
+  }))
+  const points = loadRedeems()
+    .filter((item) => item.source !== 'shop' && catalogProduct(item.productId)?.zone !== 'benefit')
+    .map((item) => ({
+      id: item.id,
+      productName: item.productName,
+      time: item.time,
+      cost: item.cost,
+      status: item.status === 'refunded' ? '已退款' : '已完成',
+    }))
+  const seen = new Set<string>()
+  return [...shop, ...points]
+    .filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)))
+    .sort((a, b) => orderTimeValue(b.time) - orderTimeValue(a.time))
+}
+
 export function ShopPointsPage() {
   const { go } = useStore()
-  const [orders, setOrders] = useState(() => listShopRedeems())
+  const [tab, setTab] = useState<PointsTab>('zone')
+  const [zoneOrders, setZoneOrders] = useState(listZoneRedeems)
+  const [mallOrders, setMallOrders] = useState(listMallRedeems)
 
   useEffect(() => {
-    const sync = () => setOrders(listShopRedeems())
+    const sync = () => {
+      setZoneOrders(listZoneRedeems())
+      setMallOrders(listMallRedeems())
+    }
     window.addEventListener('points-mall-sync', sync)
     return () => window.removeEventListener('points-mall-sync', sync)
   }, [])
+
+  const orders = tab === 'zone' ? zoneOrders : mallOrders
 
   return (
     <div className="page shop-page">
@@ -210,19 +284,29 @@ export function ShopPointsPage() {
         <b>7500</b>
         <p>积分自发放起 90 天有效。</p>
       </div>
-      <h3 className="shop-block">自营兑换</h3>
-      {orders.length === 0 ? <p className="shop-empty">还没有自营商品兑换</p> : null}
+      <div className="shop-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={tab === 'zone'} className={tab === 'zone' ? 'is-on' : ''} onClick={() => setTab('zone')}>
+          专区权益
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'mall'} className={tab === 'mall' ? 'is-on' : ''} onClick={() => setTab('mall')}>
+          商城权益
+        </button>
+      </div>
+      {orders.length === 0 ? <p className="shop-empty">{tab === 'zone' ? '还没有专区权益兑换' : '还没有商城权益兑换'}</p> : null}
       <div className="shop-list">
         {orders.map((item) => (
-          <div key={item.id} className="shop-row is-static">
+          <button key={item.id} type="button" className="shop-row">
             <div>
               <h4>{item.productName}</h4>
               <p>
-                {item.time} · {item.status === 'refunded' ? '已退款' : item.status === 'pending' ? '待发货' : item.status === 'shipped' ? '已发货' : item.status === 'refunding' ? '退款中' : '已完成'}
+                {item.time} · {item.status}
               </p>
             </div>
-            <span>-{item.cost}</span>
-          </div>
+            <span className="shop-cost">-{item.cost}</span>
+            <span className="shop-go" aria-hidden>
+              ›
+            </span>
+          </button>
         ))}
       </div>
     </div>
