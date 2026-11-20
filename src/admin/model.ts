@@ -261,10 +261,7 @@ export const SCENE_TREE: { id: SceneL1; label: string; children: { id: SceneL2; 
   {
     id: 'points',
     label: '积分权益',
-    children: [
-      { id: 'points-issue', label: '积分发放' },
-      { id: 'points-redeem', label: '积分兑换' },
-    ],
+    children: [{ id: 'points-issue', label: '积分发放' }],
   },
   {
     id: 'used-car',

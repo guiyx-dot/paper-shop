@@ -6,6 +6,7 @@ import {
   APPROVAL_RECORDS,
   FEE_RATE,
   GENERAL_FEE_RATE,
+  PURCHASE_GOODS,
   SCENE_TREE,
   approvalById,
   dedicatedLabel,
@@ -36,12 +37,12 @@ export function KindPicker({
   kind,
   onKind,
   plain = false,
-  generalOnly = false,
+  coinsOnly = false,
 }: {
   kind: PurchaseKind | null
   onKind: (kind: PurchaseKind) => void
   plain?: boolean
-  generalOnly?: boolean
+  coinsOnly?: boolean
 }) {
   const dedicatedOn = kind === 'dedicated'
   const generalOn = kind === 'general'
@@ -66,8 +67,8 @@ export function KindPicker({
       )}
       <div className="kind-quiet">
         <span>采购类型</span>
-        {generalOnly ? null : row('dedicated', dedicatedOn, '券', '专用券', '兑换「权益专区」币/券')}
-        {row('general', generalOn, '积', '通用积分', '兑换「积分专区」专属商品')}
+        {row('dedicated', dedicatedOn, '券', '专用券', '兑换「权益专区」币/券')}
+        {coinsOnly ? null : row('general', generalOn, '积', '通用积分', '兑换「积分专区」专属商品')}
       </div>
     </div>
   )
@@ -751,11 +752,15 @@ export function ApprovalBuyPage() {
   const { go, approvalDraft, setApprovalDraft, createOrder, orders } = useAdmin()
   const record = approvalDraft ? approvalById(approvalDraft.recordId) : undefined
   const commission = isCommissionScene(record?.l2)
-  const resumed = Boolean(approvalDraft?.ticketNo)
+  const resumedCoinId =
+    commission && approvalDraft?.kind === 'dedicated'
+      ? (PURCHASE_GOODS.find((item) => item.id === approvalDraft.productId && item.tab === 'coin')?.id ?? null)
+      : null
+  const resumed = Boolean(approvalDraft?.ticketNo) && (!commission || Boolean(resumedCoinId))
   const [step, setStep] = useState<1 | 3>(resumed ? 3 : 1)
-  const [kind, setKind] = useState<PurchaseKind>(commission ? 'general' : resumed ? (approvalDraft?.kind ?? 'dedicated') : 'dedicated')
+  const [kind, setKind] = useState<PurchaseKind>(commission ? 'dedicated' : resumed ? (approvalDraft?.kind ?? 'dedicated') : 'dedicated')
   const [productId, setProductId] = useState<string | null>(
-    resumed ? (approvalDraft?.kind === 'general' ? 'general' : (approvalDraft?.productId ?? null)) : null,
+    commission ? resumedCoinId : resumed ? (approvalDraft?.kind === 'general' ? 'general' : (approvalDraft?.productId ?? null)) : null,
   )
   const [paying, setPaying] = useState(false)
   const [feeAsk, setFeeAsk] = useState(false)
@@ -778,19 +783,21 @@ export function ApprovalBuyPage() {
   const rows = approvalDraft.rows
 
   const chooseKind = (next: PurchaseKind) => {
-    if (commission && next !== 'general') return
+    if (commission && next !== 'dedicated') return
     if (next !== kind) setProductId(null)
     setKind(next)
   }
 
   const placeOrder = (id: string) => {
-    if (commission && id !== 'general') return
+    if (commission && !PURCHASE_GOODS.some((item) => item.id === id && item.tab === 'coin')) return
+    const nextKind: PurchaseKind = commission ? 'dedicated' : kind
     setProductId(id)
+    setKind(nextKind)
     setApprovalDraft({
       ...approvalDraft,
-      kind,
-      productId: kind === 'dedicated' ? id : undefined,
-      merchantFeeRate: kind === 'general' ? GENERAL_FEE_RATE : FEE_RATE,
+      kind: nextKind,
+      productId: nextKind === 'dedicated' ? id : undefined,
+      merchantFeeRate: nextKind === 'general' ? GENERAL_FEE_RATE : FEE_RATE,
       rows,
       ticketNo: approvalDraft.ticketNo ?? `2026${Date.now().toString().slice(-12)}`,
     })
@@ -871,17 +878,17 @@ export function ApprovalBuyPage() {
 
               <div className="field is-choices">
                 <span>选择采购类型</span>
-                <KindPicker plain generalOnly={commission} kind={commission ? 'general' : kind} onKind={chooseKind} />
+                <KindPicker plain coinsOnly={commission} kind={commission ? 'dedicated' : kind} onKind={chooseKind} />
               </div>
 
               <div className="field buy-goods">
                 <span>选择商品</span>
-                {commission || kind === 'general' ? (
-                  <div className={commission ? undefined : 'buy-goods-general'}>
+                {!commission && kind === 'general' ? (
+                  <div className="buy-goods-general">
                     <GeneralPointsCard selected={productId === 'general'} onSelect={() => placeOrder('general')} />
                   </div>
                 ) : (
-                  <EquityPicker value={productId ?? ''} onSelect={placeOrder} />
+                  <EquityPicker coinsOnly={commission} value={productId ?? ''} onSelect={placeOrder} />
                 )}
               </div>
 
